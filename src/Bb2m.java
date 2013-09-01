@@ -3,6 +3,8 @@ import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.Arrays;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import javax.imageio.ImageIO;
 import javax.swing.JFrame;
@@ -17,24 +19,14 @@ import javax.swing.JFrame;
  * lightness control
  * image save
  */
-public class Bb2 extends JFrame {
+public class Bb2m extends JFrame {
 	
-	public static void mainf(String[] args) throws Exception {
-		System.out.println(System.getProperty("user.dir"));
-		int w = 640, h = 480;
-		C o = new C(-2, -1.5);
-		C s = new C(4, 3);
-		BufferedImage im = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
-		for (int i = 0, n = 100; n < 400; i++, n++) {
-			calcmb(im, o, s, MF.powpc(n / 100.0));
-			File f = new File("powimg/image" + i + ".png");
-			ImageIO.write(im, "png", f);
-			System.out.println("wrote " + f);
-		}
-	}
+	private static final BlockingQueue q = new LinkedBlockingQueue();
+	private static int TW = 100;
+	private static int TH = 75;
 	
 	public static void main(String[] args) {
-		JFrame f = new Bb2();
+		JFrame f = new Bb2m();
 		f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		f.setSize(640, 480);
 		f.show();
@@ -42,17 +34,16 @@ public class Bb2 extends JFrame {
 
 	C origin, size;
 	Point p1, p2;
-	BufferedImage im;
+	Image[][] images;
 	
 	void init() {
 		System.out.println("reset");
 		origin = new C(-2, -1.5);
 		size = new C(4, 3);
-		im = null;
-		repaint();
+		calc(origin, size, MF.sqpc);
 	}
 
-	public Bb2() {
+	public Bb2m() {
 		init();
 		addMouseListener(new MouseAdapter() {
 			@Override
@@ -74,7 +65,7 @@ public class Bb2 extends JFrame {
 					System.out.println("o2=" + o2 + " s2=" + s2);
 					origin = o2;
 					size = s2;
-					im = null;
+					calc(origin, size, MF.sqpc);
 				}
 				p1 = null;
 				p2 = null;
@@ -119,42 +110,64 @@ public class Bb2 extends JFrame {
 
 	@Override
 	public void paint(Graphics g) {
-		final int w = getWidth(), h = getHeight();
-		if (im == null || im.getWidth() != w || im.getHeight() != h) {
-			System.out.println("recalc");
-			im = (BufferedImage) createImage(w, h);
-			calcmb(im, origin, size, MF.sqpc);
-			//calc2();
+		if (images == null) {
+			return;
 		}
-		System.out.println("redraw");
-		g.drawImage(im, 0, 0, null);
+		for (int n = 0; n < images.length; n++) {
+			for (int m = 0; m < images[n].length; m++) {
+				Image im = images[n][m];
+				if (im != null) {
+					final int x = n * TW, y = m * TH;
+					g.drawImage(im, x, y, null);
+				}
+			}
+		}
 		if (p1 != null && p2 != null) {
 			g.setColor(Color.green);
 			g.drawRect(p1.x, p1.y, p2.x - p1.x, p2.y - p1.y);
 		}
-		System.out.println("done");
 	}
-
-	private static void calcmb(BufferedImage im, C origin, C size, MF f) {
-		final int w = im.getWidth(), h = im.getHeight();
+	
+	private void calc(final C origin, final C size, final MF f) {
+		System.out.println("calc");
+		final int w = getWidth(), h = getHeight();
 		final int itdepth = 256;
 		final double bound = 4;
+		int xa = (w + TW - 1) / TW;
+		int ya = (h + TH - 1) / TH;
+		images = new Image[xa][ya];
+		
+		for (int n = 0; n < images.length; n++) {
+			for (int m = 0; m < images[n].length; m++) {
+				final int x = n * TW, y = m * TH;
+				final int fn = n, fm = m;
+				final BufferedImage im = (BufferedImage) createImage(Math.min(TW, w - x), Math.min(TH, h - y));
+				// TODO queue these
+				new Thread() {
+					public void run() {
+						subcalc(im, x, y, itdepth, bound, f, w, h, size, origin);
+						images[fn][fm] = im;
+						repaint();
+					}
+				}.start();
+			}
+		}
+	}
+	
+	private void subcalc(BufferedImage im, int xo, int yo, int itdepth, double bound, MF f, int w, int h, C size, C origin) {
+		System.out.println("subcalc " + xo + ", " + yo);
 		final C z = new C();
 		final C p = new C();
-		
-		for (int x = 0; x < w; x++) {
-			for (int y = 0; y < h; y++) {
-				//p.setxy(origin, size, w, h, x, y);
+		int iw = im.getWidth();
+		int ih = im.getHeight();
+		for (int x = 0; x < iw; x++) {
+			for (int y = 0; y < ih; y++) {
 				p.set(size);
-				p.scale(x, y, w, h);
+				p.scale(xo + x, yo + y, w, h);
 				p.add(origin);
 				z.set(p);
 				int i;
 				for (i = 0; i < itdepth; i++) {
-					//z.mul(z);
-					//z.pow(1.5);
-					//z.add(p);
-					//z.conj();
 					f.apply(z, p);
 					if (z.getAbs() > bound) {
 						break;
@@ -165,65 +178,4 @@ public class Bb2 extends JFrame {
 			}
 		}
 	}
-	
-	// calculate buddabrot
-	private void calc2() {
-		int w = im.getWidth(), h = im.getHeight();
-		final int itdepth = 1024;
-		// xy of each point in iteration
-		int[] va = new int[itdepth];
-		// screen points
-		int[][] pca = new int[w][h];
-		// max screen point count
-		int pcmax = 0;
-		int vs = 0;
-		C z = new C();
-		C p = new C();
-		for (int x = 0; x < w; x++) {
-			for (int y = 0; y < h; y++) {
-				vs = 0;
-				p.setxy(origin, size, w, h, x, y);
-				z.set(p);
-				test: {
-					int i;
-					for (i = 0; i < itdepth; i++) {
-						//z.mul(z);
-						//z.mul(z);
-						z.pow(2.5);
-						z.add(p);
-						if (z.getAbs() > 1e3) {
-							break test;
-						}
-						va[vs++] = (reToX(z.r) << 16) | imToY(z.i);
-					}
-					
-					// p is in M
-					Arrays.sort(va, 0, vs);
-					int vp = -1;
-					for (i = 0; i < vs; i++) {
-						int v = va[i];
-						if (v != vp) {
-							vp = v;
-							int x2 = v >>> 16;
-							int y2 = v & 0xffff;
-							if (x2 >= 0 && x2 < w && y2 >= 0 && y2 < h) {
-								int pc = ++pca[x2][y2];
-								if (pc > pcmax) {
-									pcmax = pc;
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-		System.out.println("pcmax=" + pcmax);
-		for (int x = 0; x < w; x++) {
-			for (int y = 0; y < h; y++) {
-				int i = (int) ((((double)pca[x][y])*255) / pcmax);
-				im.setRGB(x, y, (i << 16) | (i << 8) | i);
-			}
-		}
-	}
-
 }

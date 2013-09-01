@@ -1,5 +1,5 @@
 
-class C {
+final class C {
 	public double r, i;
 
 	public C(double r, double i) {
@@ -11,8 +11,13 @@ class C {
 		//
 	}
 	
+	public C(C c) {
+		this.r = c.r;
+		this.i = c.i;
+	}
+	
 	public void log() {
-		set(Math.log(abs()), Math.atan2(i, r));
+		set(Math.log(getAbs()), Math.atan2(i, r));
 	}
 	
 	public void exp() {
@@ -20,9 +25,15 @@ class C {
 		set(er * Math.cos(i), er * Math.sin(i));
 	}
 	
-	public void setxy(C origin, C size, int width, int height, int x, int y) {
+	@Deprecated
+	public void setxy (C origin, C size, int width, int height, int x, int y) {
 		r = origin.r + ((size.r * x) / width);
 		i = origin.i + ((size.i * y) / height);
+	}
+	
+	public void scale(int x, int y, int w, int h) {
+		r = (r * x) / w;
+		i = (i * y) / h;
 	}
 
 	public void conj() {
@@ -31,12 +42,17 @@ class C {
 	
 	public void pow(double n) {
 		log();
-		muls(n);
+		mul(n);
 		exp();
 	}
 
-	public double abs() {
+	@Deprecated
+	public double getAbs() {
 		return Math.hypot(r, i);
+	}
+	
+	public double getAbsSq() {
+		return r * r + i * i;
 	}
 
 	public void set(C c) {
@@ -53,9 +69,14 @@ class C {
 		set(r * c.r - i * c.i, i * c.r + r * c.i);
 	}
 	
-	public void muls(double s) {
+	public void mul(double s) {
 		r *= s;
 		i *= s;
+	}
+	
+	public void scale(double x, double y) {
+		r *= x;
+		i *= y;
 	}
 
 	public void add(C c) {
