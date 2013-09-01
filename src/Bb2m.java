@@ -2,7 +2,8 @@ import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.util.Arrays;
+import java.util.*;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -21,7 +22,7 @@ import javax.swing.JFrame;
  */
 public class Bb2m extends JFrame {
 	
-	private static final BlockingQueue q = new LinkedBlockingQueue();
+	private static final BlockingQueue<Runnable> q = new LinkedBlockingQueue<Runnable>();
 	private static int TW = 100;
 	private static int TH = 75;
 	
@@ -30,6 +31,25 @@ public class Bb2m extends JFrame {
 		f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		f.setSize(640, 480);
 		f.show();
+		// TODO check number of cpus
+		for (int n = 0; n < 8; n++) {
+			Thread t = new Thread("Worker-" + n) {
+				public void run() {
+					while (true) {
+						try {
+							Runnable r = q.take();
+							System.out.println(getName());
+							r.run();
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+					}
+				}
+			};
+			t.setPriority(Thread.MIN_PRIORITY);
+			t.setDaemon(true);;
+			t.start();
+		}
 	}
 
 	C origin, size;
@@ -65,6 +85,7 @@ public class Bb2m extends JFrame {
 					System.out.println("o2=" + o2 + " s2=" + s2);
 					origin = o2;
 					size = s2;
+					// TODO clear queue
 					calc(origin, size, MF.sqpc);
 				}
 				p1 = null;
@@ -135,23 +156,25 @@ public class Bb2m extends JFrame {
 		final double bound = 4;
 		int xa = (w + TW - 1) / TW;
 		int ya = (h + TH - 1) / TH;
-		images = new Image[xa][ya];
+		images = new Image[xa][ya]; // TODO only recreate if changed
 		
+		List<Runnable> l = new ArrayList<Runnable>();
 		for (int n = 0; n < images.length; n++) {
 			for (int m = 0; m < images[n].length; m++) {
 				final int x = n * TW, y = m * TH;
 				final int fn = n, fm = m;
 				final BufferedImage im = (BufferedImage) createImage(Math.min(TW, w - x), Math.min(TH, h - y));
-				// TODO queue these
-				new Thread() {
+				l.add(new Runnable() {
 					public void run() {
 						subcalc(im, x, y, itdepth, bound, f, w, h, size, origin);
 						images[fn][fm] = im;
 						repaint();
 					}
-				}.start();
+				});
 			}
 		}
+		Collections.shuffle(l);
+		q.addAll(l);
 	}
 	
 	private void subcalc(BufferedImage im, int xo, int yo, int itdepth, double bound, MF f, int w, int h, C size, C origin) {
