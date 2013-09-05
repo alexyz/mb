@@ -65,6 +65,7 @@ public class Bb2m extends JFrame {
 		size = new C(4, 3);
 		f = MF.powpc(2.01);
 		images = null;
+		repaint();
 	}
 	
 	public Bb2m() {
