@@ -77,6 +77,13 @@ public class Bb2mC extends JComponent {
 				repaint();
 			}
 		});
+		addComponentListener(new ComponentAdapter() {
+			@Override
+			public void componentResized (ComponentEvent e) {
+				images = null;
+				repaint();
+			}
+		});
 	}
 	
 	private int reToX(final double r) {
@@ -97,8 +104,13 @@ public class Bb2mC extends JComponent {
 	@Override
 	public void paintComponent(final Graphics g) {
 		if (images == null) {
+			g.setColor(Color.darkGray);
+			Graphics2D g2 = (Graphics2D) g;
+			g2.fill(g.getClipBounds());
 			calc();
+			return;
 		}
+		
 		for (int n = 0; n < images.length; n++) {
 			for (int m = 0; m < images[n].length; m++) {
 				final Image im = images[n][m];
@@ -106,11 +118,12 @@ public class Bb2mC extends JComponent {
 				if (im != null) {
 					g.drawImage(im, x, y, null);
 				} else {
-					g.setColor(Color.yellow);
+					g.setColor(Color.darkGray);
 					g.fillRect(x, y, TW, TH);
 				}
 			}
 		}
+		
 		if (p1 != null && p2 != null) {
 			g.setColor(Color.green);
 			g.drawRect(p1.x, p1.y, p2.x - p1.x, p2.y - p1.y);
@@ -120,6 +133,8 @@ public class Bb2mC extends JComponent {
 	private void calc() {
 		System.out.println("calc");
 		Bb2mF.q.clear();
+		
+		// TODO parameter object
 		
 		final C origin = new C(this.origin);
 		final C size = new C(this.size);
@@ -158,7 +173,7 @@ public class Bb2mC extends JComponent {
 	}
 	
 	private static void subcalc(final C origin, final C size, final int w, final int h, final MF f, final int itdepth, final double bound, final BufferedImage im, final int xo, final int yo) {
-//		System.out.println("subcalc " + xo + ", " + yo);
+		//		System.out.println("subcalc " + xo + ", " + yo);
 		final C z = new C();
 		final C p = new C();
 		final int iw = im.getWidth();
