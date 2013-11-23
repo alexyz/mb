@@ -24,7 +24,8 @@ public class Bb2mC extends JComponent {
 		bound = 4;
 		origin = new C(-3, -1.5);
 		size = new C(4, 3);
-		f = MF.powpc(2.0078125);
+		f = MF.powpc(2.0 + 1.0 / 64);
+//		f = MF.sqpc;
 		images = null;
 		repaint();
 	}
