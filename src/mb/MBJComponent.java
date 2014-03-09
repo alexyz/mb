@@ -1,3 +1,5 @@
+package mb;
+
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
@@ -5,16 +7,18 @@ import java.util.*;
 import java.util.List;
 
 import javax.swing.JComponent;
+import javax.swing.JMenuItem;
+import javax.swing.JPopupMenu;
 
-public class Bb2mC extends JComponent {
+public class MBJComponent extends JComponent {
 	
 	private static int TW = 100;
 	private static int TH = 75;
 	
 	private int itdepth;
 	private double bound;
-	private MF f;
-	private C origin, size;
+	private MBFunction f;
+	private Complex origin, size;
 	private Point p1, p2;
 	private Image[][] images;
 	
@@ -22,41 +26,51 @@ public class Bb2mC extends JComponent {
 		System.out.println("reset");
 		itdepth = 256;
 		bound = 4;
-		origin = new C(-3, -1.5);
-		size = new C(4, 3);
-		f = MF.powpc(2.0 + 1.0 / 64);
-//		f = MF.sqpc;
+		origin = new Complex(-3, -1.5);
+		size = new Complex(4, 3);
+		reimage();
+	}
+	
+	void reimage() {
 		images = null;
 		repaint();
 	}
 	
-	public Bb2mC() {
+	public MBJComponent() {
 		init();
 		addMouseListener(new MouseAdapter() {
 			@Override
 			public void mousePressed(final MouseEvent e) {
-				p1 = e.getPoint();
-			}
-			@Override
-			public void mouseClicked(final MouseEvent e) {
-				if (e.getButton() == MouseEvent.BUTTON3) {
-					init();
+				if (e.isPopupTrigger()) {
+					popup(e);
+				} else if (e.getButton() == MouseEvent.BUTTON1) {
+					p1 = e.getPoint();
 				}
 			}
+			
 			@Override
 			public void mouseReleased(final MouseEvent e) {
-				if (p1 != null && p2 != null) {
-					final C o2 = xyToC(p1.x, p1.y);
-					final C s2 = xyToC(p2.x, p2.y);
-					s2.sub(o2);
-					System.out.println("o2=" + o2 + " s2=" + s2);
-					origin = o2;
-					size = s2;
-					calc();
+				if (e.isPopupTrigger()) {
+					popup(e);
+				} else if (e.getButton() == MouseEvent.BUTTON1) {
+					if (p1 != null && p2 != null) {
+						int x1 = Math.min(p1.x, p2.x);
+						int y1 = Math.min(p1.y, p2.y);
+						int x2 = Math.max(p1.x, p2.x);
+						int y2 = Math.max(p1.y, p2.y);
+						final Complex o = viewToModel(x1, y1);
+						final Complex s = viewToModel(x2, y2);
+						s.sub(o);
+						System.out.println("o=" + o);
+						System.out.println("s=" + s);
+						origin = o;
+						size = s;
+						recalc();
+					}
+					p1 = null;
+					p2 = null;
+					repaint();
 				}
-				p1 = null;
-				p2 = null;
-				repaint();
 			}
 		});
 		addMouseMotionListener(new MouseAdapter() {
@@ -64,15 +78,14 @@ public class Bb2mC extends JComponent {
 			public void mouseMoved(final MouseEvent e) {
 				final Point p = e.getPoint();
 				//setTitle(xyToC(p.x, p.y).toString());
-				firePropertyChange("title", null, xyToC(p.x, p.y).toString());
+				firePropertyChange("title", null, viewToModel(p.x, p.y).toString());
 			}
 			
 			@Override
 			public void mouseDragged(final MouseEvent e) {
-				System.out.println("mouse dragged");
 				if (p1 != null) {
 					final Point p = e.getPoint();
-					firePropertyChange("title", null, xyToC(p1.x, p1.y) + " - " + xyToC(p.x, p.y));
+					firePropertyChange("title", null, viewToModel(p1.x, p1.y) + ", " + viewToModel(p.x, p.y));
 					p2 = p;
 				}
 				repaint();
@@ -86,17 +99,22 @@ public class Bb2mC extends JComponent {
 			}
 		});
 	}
-	
-	private int reToX(final double r) {
-		return (int) ((r - origin.r) * getWidth() / size.r);
+	private void popup (MouseEvent e) {
+		System.out.println("popup");
+		JPopupMenu menu = new JPopupMenu();
+		JMenuItem resetItem = new JMenuItem("Reset");
+		resetItem.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed (ActionEvent e) {
+				init();
+			}
+		});
+		menu.add(resetItem);
+		menu.show(this, e.getX(), e.getY());
 	}
 	
-	private int imToY(final double i) {
-		return (int) ((i - origin.i) * getHeight() / size.i);
-	}
-	
-	private C xyToC(final int x, final int y) {
-		final C c = new C(size);
+	private Complex viewToModel(final int x, final int y) {
+		final Complex c = new Complex(size);
 		c.scale(x, y, getWidth(), getHeight());
 		c.add(origin);
 		return c;
@@ -108,7 +126,7 @@ public class Bb2mC extends JComponent {
 			g.setColor(Color.darkGray);
 			Graphics2D g2 = (Graphics2D) g;
 			g2.fill(g.getClipBounds());
-			calc();
+			recalc();
 			return;
 		}
 		
@@ -127,19 +145,23 @@ public class Bb2mC extends JComponent {
 		
 		if (p1 != null && p2 != null) {
 			g.setColor(Color.green);
-			g.drawRect(p1.x, p1.y, p2.x - p1.x, p2.y - p1.y);
+			int x = Math.min(p1.x, p2.x);
+			int y = Math.min(p1.y, p2.y);
+			int w = Math.abs(p1.x - p2.x);
+			int h = Math.abs(p1.y - p2.y);
+			g.drawRect(x, y, w, h);
 		}
 	}
 	
-	private void calc() {
-		System.out.println("calc");
-		Bb2mF.q.clear();
+	private void recalc() {
+		System.out.println("recalc");
+		MBJFrame.QUEUE.clear();
 		
 		// TODO parameter object
 		
-		final C origin = new C(this.origin);
-		final C size = new C(this.size);
-		final MF f = this.f;
+		final Complex origin = new Complex(this.origin);
+		final Complex size = new Complex(this.size);
+		final MBFunction f = this.f;
 		final int w = getWidth(), h = getHeight();
 		final int itdepth = this.itdepth;
 		final double bound = this.bound;
@@ -149,7 +171,7 @@ public class Bb2mC extends JComponent {
 		final Image[][] images = new Image[xt][yt];
 		this.images = images;
 		
-		final List<Runnable> l = new ArrayList<Runnable>();
+		final List<Runnable> l = new ArrayList<>();
 		for (int n = 0; n < images.length; n++) {
 			for (int m = 0; m < images[n].length; m++) {
 				final int x = n * TW, y = m * TH;
@@ -170,13 +192,13 @@ public class Bb2mC extends JComponent {
 		}
 		
 		Collections.shuffle(l);
-		Bb2mF.q.addAll(l);
+		MBJFrame.QUEUE.addAll(l);
 	}
 	
-	private static void subcalc(final C origin, final C size, final int w, final int h, final MF f, final int itdepth, final double bound, final BufferedImage im, final int xo, final int yo) {
+	private static void subcalc(final Complex origin, final Complex size, final int w, final int h, final MBFunction f, final int itdepth, final double bound, final BufferedImage im, final int xo, final int yo) {
 		//		System.out.println("subcalc " + xo + ", " + yo);
-		final C z = new C();
-		final C p = new C();
+		final Complex z = new Complex();
+		final Complex p = new Complex();
 		final int iw = im.getWidth();
 		final int ih = im.getHeight();
 		final double boundsq = bound * bound;
@@ -197,5 +219,9 @@ public class Bb2mC extends JComponent {
 				im.setRGB(x, y, i | i << 8 | i << 16);
 			}
 		}
+	}
+
+	public void setMBFunction (MBFunction f) {
+		this.f = f;
 	}
 }
