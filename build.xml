@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project default="jar">
+    <target name="jar">
+        <jar destfile="mandelbrot.jar" filesetmanifest="mergewithoutmain">
+            <manifest>
+                <attribute name="Main-Class" value="mb.MBJFrame"/>
+                <attribute name="Class-Path" value="."/>
+            </manifest>
+            <fileset dir="bin"/>
+        </jar>
+    </target>
+	<target name="deploy" depends="jar">
+		<copy file="mandelbrot.jar" tofile="${user.home}/Dropbox/Public/mandelbrot.jar"/>
+	</target>
+</project>
