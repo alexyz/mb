@@ -1,11 +1,14 @@
 package mb;
 
 import java.awt.BorderLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -42,27 +45,61 @@ public class MBJFrame extends JFrame {
 	}
 	
 	public MBJFrame () {
-		final MBJComponent c = new MBJComponent();
-		final JSpinner s = new JSpinner(new SpinnerNumberModel(2.0, 1.01, 4.00, 0.01));
-		s.addChangeListener(new ChangeListener() {
+		final MBJComponent mbComp = new MBJComponent();
+		mbComp.setMBFunction(MBFunction.sqpc);
+		
+		final JSpinner powerSpinner = new JSpinner(new SpinnerNumberModel(2.0, 1.01, 4.00, 0.001));
+		powerSpinner.addChangeListener(new ChangeListener() {
 			@Override
 			public void stateChanged (ChangeEvent e) {
-				double v = (Double) s.getValue();
-				v = Math.round(v * 100) / 100.0;
-				System.out.println("v=" + v);
-				c.setMBFunction(v == 2 ? MBFunction.sqpc : MBFunction.powpc(v));
-				c.reimage();
+				double v = (Double) powerSpinner.getValue();
+				v = Math.round(v * 1000) / 1000.0;
+				powerSpinner.setValue(v);
+				mbComp.setMBFunction(v == 2 ? MBFunction.sqpc : MBFunction.powpc(v));
+				mbComp.reimage();
 			}
 		});
-		c.setMBFunction(MBFunction.sqpc);
-		JPanel q = new JPanel();
-		q.add(new JLabel("Power"));
-		q.add(s);
-		JPanel p = new JPanel(new BorderLayout());
-		p.add(q, BorderLayout.NORTH);
-		p.add(c, BorderLayout.CENTER);
-		getContentPane().add(p);
-		c.addPropertyChangeListener("title", new PropertyChangeListener() {
+		
+		final JSpinner itSpinner = new JSpinner(new SpinnerNumberModel(mbComp.getItdepth(), 15, 255, 16));
+		itSpinner.addChangeListener(new ChangeListener() {
+			@Override
+			public void stateChanged (ChangeEvent e) {
+				mbComp.setItDepth((Integer) itSpinner.getValue());
+				mbComp.reimage();
+			}
+		});
+		
+		final JSpinner boundSpinner = new JSpinner(new SpinnerNumberModel(mbComp.getBound(), 0.5, 10, 0.1));
+		boundSpinner.addChangeListener(new ChangeListener() {
+			@Override
+			public void stateChanged (ChangeEvent e) {
+				mbComp.setBound((Double) boundSpinner.getValue());
+				mbComp.reimage();
+			}
+		});
+		
+		final JButton resetButton = new JButton("Reset");
+		resetButton.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed (ActionEvent e) {
+				mbComp.reset();
+			}
+		});
+		
+		JPanel buttonPanel = new JPanel();
+		buttonPanel.add(new JLabel("Power"));
+		buttonPanel.add(powerSpinner);
+		buttonPanel.add(new JLabel("Depth"));
+		buttonPanel.add(itSpinner);
+		buttonPanel.add(new JLabel("Bound"));
+		buttonPanel.add(boundSpinner);
+		buttonPanel.add(resetButton);
+		
+		JPanel contentPanel = new JPanel(new BorderLayout());
+		contentPanel.add(buttonPanel, BorderLayout.NORTH);
+		contentPanel.add(mbComp, BorderLayout.CENTER);
+		getContentPane().add(contentPanel);
+		mbComp.addPropertyChangeListener("title", new PropertyChangeListener() {
 			@Override
 			public void propertyChange (PropertyChangeEvent arg0) {
 				setTitle(arg0.getNewValue().toString());

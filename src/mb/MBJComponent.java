@@ -15,17 +15,15 @@ public class MBJComponent extends JComponent {
 	private static int TW = 100;
 	private static int TH = 75;
 	
-	private int itdepth;
-	private double bound;
+	private int itdepth = 255;
+	private double bound = 4;
 	private MBFunction f;
 	private Complex origin, size;
 	private Point p1, p2;
 	private Image[][] images;
 	
-	void init() {
+	void reset() {
 		System.out.println("reset");
-		itdepth = 256;
-		bound = 4;
 		origin = new Complex(-3, -1.5);
 		size = new Complex(4, 3);
 		reimage();
@@ -37,7 +35,7 @@ public class MBJComponent extends JComponent {
 	}
 	
 	public MBJComponent() {
-		init();
+		reset();
 		addMouseListener(new MouseAdapter() {
 			@Override
 			public void mousePressed(final MouseEvent e) {
@@ -94,8 +92,7 @@ public class MBJComponent extends JComponent {
 		addComponentListener(new ComponentAdapter() {
 			@Override
 			public void componentResized (ComponentEvent e) {
-				images = null;
-				repaint();
+				reimage();
 			}
 		});
 	}
@@ -106,7 +103,7 @@ public class MBJComponent extends JComponent {
 		resetItem.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed (ActionEvent e) {
-				init();
+				reset();
 			}
 		});
 		menu.add(resetItem);
@@ -123,7 +120,7 @@ public class MBJComponent extends JComponent {
 	@Override
 	public void paintComponent(final Graphics g) {
 		if (images == null) {
-			g.setColor(Color.darkGray);
+			g.setColor(Color.black);
 			Graphics2D g2 = (Graphics2D) g;
 			g2.fill(g.getClipBounds());
 			recalc();
@@ -137,7 +134,7 @@ public class MBJComponent extends JComponent {
 				if (im != null) {
 					g.drawImage(im, x, y, null);
 				} else {
-					g.setColor(Color.darkGray);
+					g.setColor(Color.black);
 					g.fillRect(x, y, TW, TH);
 				}
 			}
@@ -215,7 +212,7 @@ public class MBJComponent extends JComponent {
 						break;
 					}
 				}
-				i = i * 255 / itdepth;
+				i = (i * 255) / itdepth;
 				im.setRGB(x, y, i | i << 8 | i << 16);
 			}
 		}
@@ -223,5 +220,21 @@ public class MBJComponent extends JComponent {
 
 	public void setMBFunction (MBFunction f) {
 		this.f = f;
+	}
+
+	public void setItDepth (int itdepth) {
+		this.itdepth = itdepth;
+	}
+	
+	public int getItdepth () {
+		return itdepth;
+	}
+	
+	public double getBound () {
+		return bound;
+	}
+	
+	public void setBound (double bound) {
+		this.bound = bound;
 	}
 }
