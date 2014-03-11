@@ -1,13 +1,16 @@
 package mb;
 
 import java.awt.BorderLayout;
+import java.awt.DisplayMode;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.image.BufferedImage;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.io.File;
+import java.util.concurrent.*;
 
+import javax.imageio.ImageIO;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -22,10 +25,7 @@ import javax.swing.event.ChangeListener;
  * menu (reset, itdepth, function, bb...)
  * right click to cancel zoom
  * pan/zoom controls [ < > ^ v + - r i w h ]
- * history stack
- * lightness control
  * image save
- * progressive render, e.g. itdepth 16, quarter resolution
  */
 public class MBJFrame extends JFrame {
 	
@@ -86,6 +86,33 @@ public class MBJFrame extends JFrame {
 			}
 		});
 		
+		final JButton saveButton = new JButton("Export");
+		saveButton.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed (ActionEvent ae) {
+				DisplayMode dm = getGraphicsConfiguration().getDevice().getDisplayMode();
+				long t = System.nanoTime();
+				BufferedImage image = mbComp.export(dm.getWidth(), dm.getHeight());
+				t = System.nanoTime() - t;
+				System.out.println("export time: " + (t / 1000000.0) + " ms");
+				int n = 0;
+				while (true) {
+					File f = new File("mbimage" + n + ".png");
+					if (!f.exists()) {
+						try {
+							System.out.println("write " + f.getAbsolutePath());
+							ImageIO.write(image, "png", f);
+							break;
+						} catch (Exception e) {
+							throw new RuntimeException(e);
+						}
+					}
+					n++;
+				}
+				
+			}
+		});
+		
 		JPanel buttonPanel = new JPanel();
 		buttonPanel.add(new JLabel("Power"));
 		buttonPanel.add(powerSpinner);
@@ -93,6 +120,7 @@ public class MBJFrame extends JFrame {
 		buttonPanel.add(itSpinner);
 		buttonPanel.add(new JLabel("Bound"));
 		buttonPanel.add(boundSpinner);
+		buttonPanel.add(saveButton);
 		buttonPanel.add(resetButton);
 		
 		JPanel contentPanel = new JPanel(new BorderLayout());

@@ -4,11 +4,11 @@ package mb;
  * it's a complex number type
  */
 final class Complex {
-	public double r, i;
+	public double re, im;
 	
 	public Complex (double r, double i) {
-		this.r = r;
-		this.i = i;
+		this.re = r;
+		this.im = i;
 	}
 	
 	public Complex () {
@@ -16,79 +16,79 @@ final class Complex {
 	}
 	
 	public Complex (Complex c) {
-		this.r = c.r;
-		this.i = c.i;
+		this.re = c.re;
+		this.im = c.im;
 	}
 	
 	public final void log () {
-		set(Math.log(getAbs()), Math.atan2(i, r));
+		set(Math.log(getAbs()), Math.atan2(im, re));
 	}
 	
 	public final void exp () {
-		double er = Math.exp(r);
-		set(er * Math.cos(i), er * Math.sin(i));
+		double er = Math.exp(re);
+		set(er * Math.cos(im), er * Math.sin(im));
 	}
 	
-	public final void scale (int x, int y, int w, int h) {
-		r = (r * x) / w;
-		i = (i * y) / h;
+	public final void smul (double x, double y) {
+		re *= x;
+		im *= y;
 	}
 	
 	public final void conj () {
-		i = -i;
+		im = -im;
 	}
 	
 	public final void pow (double n) {
 		log();
-		mul(n);
+		smul(n);
 		exp();
 	}
 	
 	public double getAbs () {
-		return Math.hypot(r, i);
+		return Math.hypot(re, im);
 	}
 	
 	public double getAbsSq () {
-		return r * r + i * i;
+		return re * re + im * im;
 	}
 	
 	public final void set (Complex c) {
-		this.r = c.r;
-		this.i = c.i;
+		this.re = c.re;
+		this.im = c.im;
 	}
 	
 	public final void set (double r, double i) {
-		this.r = r;
-		this.i = i;
+		this.re = r;
+		this.im = i;
 	}
 	
 	public final void mul (Complex c) {
-		set(r * c.r - i * c.i, i * c.r + r * c.i);
+		set(re * c.re - im * c.im, im * c.re + re * c.im);
 	}
 	
-	public final void mul (double s) {
-		r *= s;
-		i *= s;
+	public final void smul (double s) {
+		re *= s;
+		im *= s;
 	}
 	
-	public final void scale (double x, double y) {
-		r *= x;
-		i *= y;
+	public final void sdiv (double x, double y) {
+		re /= x;
+		im /= y;
 	}
 	
 	public final void add (Complex c) {
-		r += c.r;
-		i += c.i;
+		re += c.re;
+		im += c.im;
 	}
 	
 	public final void sub (Complex c) {
-		r -= c.r;
-		i -= c.i;
+		re -= c.re;
+		im -= c.im;
 	}
 	
 	@Override
 	public String toString () {
-		return String.format("%f%+fi", r, i);
+		return String.format("%f%+fi", re, im);
 	}
 	
 }

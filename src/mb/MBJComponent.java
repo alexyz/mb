@@ -12,12 +12,12 @@ import javax.swing.JPopupMenu;
 
 public class MBJComponent extends JComponent {
 	
-	private static int TW = 100;
-	private static int TH = 75;
+	private static int TILEWIDTH = 75;
+	private static int TILEHEIGHT = 75;
 	
-	private int itdepth = 255;
+	private int iterationDepth = 255;
 	private double bound = 4;
-	private MBFunction f;
+	private MBFunction mbFunction;
 	private Complex origin, size;
 	private Point p1, p2;
 	private Image[][] images;
@@ -112,7 +112,8 @@ public class MBJComponent extends JComponent {
 	
 	private Complex viewToModel(final int x, final int y) {
 		final Complex c = new Complex(size);
-		c.scale(x, y, getWidth(), getHeight());
+		c.smul(x, y);
+		c.sdiv(getWidth(), getHeight());
 		c.add(origin);
 		return c;
 	}
@@ -130,12 +131,12 @@ public class MBJComponent extends JComponent {
 		for (int n = 0; n < images.length; n++) {
 			for (int m = 0; m < images[n].length; m++) {
 				final Image im = images[n][m];
-				final int x = n * TW, y = m * TH;
+				final int x = n * TILEWIDTH, y = m * TILEHEIGHT;
 				if (im != null) {
 					g.drawImage(im, x, y, null);
 				} else {
 					g.setColor(Color.black);
-					g.fillRect(x, y, TW, TH);
+					g.fillRect(x, y, TILEWIDTH, TILEHEIGHT);
 				}
 			}
 		}
@@ -150,38 +151,39 @@ public class MBJComponent extends JComponent {
 		}
 	}
 	
+	public BufferedImage export(int w, int h) {
+		BufferedImage image = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
+		final MBImage mbim = new MBImage(origin, size, mbFunction, iterationDepth, bound);
+		mbim.calc(image, 0, 0, w, h);
+		return image;
+	}
+	
 	private void recalc() {
 		System.out.println("recalc");
 		MBJFrame.QUEUE.clear();
 		
-		// TODO parameter object
-		
-		final Complex origin = new Complex(this.origin);
-		final Complex size = new Complex(this.size);
-		final MBFunction f = this.f;
 		final int w = getWidth(), h = getHeight();
-		final int itdepth = this.itdepth;
-		final double bound = this.bound;
-		
-		final int xt = (w + TW - 1) / TW;
-		final int yt = (h + TH - 1) / TH;
-		final Image[][] images = new Image[xt][yt];
+		final int xi = (w + TILEWIDTH - 1) / TILEWIDTH;
+		final int yi = (h + TILEHEIGHT - 1) / TILEHEIGHT;
+		final Image[][] images = new Image[xi][yi];
 		this.images = images;
-		
+		final MBImage mbim = new MBImage(origin, size, mbFunction, iterationDepth, bound);
 		final List<Runnable> l = new ArrayList<>();
-		for (int n = 0; n < images.length; n++) {
-			for (int m = 0; m < images[n].length; m++) {
-				final int x = n * TW, y = m * TH;
-				final int fn = n, fm = m;
-				final int iw = Math.min(TW, w - x);
-				final int ih = Math.min(TH, h - y);
-				final BufferedImage im = (BufferedImage) createImage(iw, ih);
+		
+		for (int ix = 0; ix < images.length; ix++) {
+			for (int iy = 0; iy < images[ix].length; iy++) {
+				final int xo = ix * TILEWIDTH, yo = iy * TILEHEIGHT;
+				final int fix = ix, fiy = iy;
+				final int iw = Math.min(TILEWIDTH, w - xo);
+				final int ih = Math.min(TILEHEIGHT, h - yo);
+				final BufferedImage image = (BufferedImage) createImage(iw, ih);
+				
 				l.add(new Runnable() {
 					@Override
 					public void run() {
 						// no field accesses
-						subcalc(origin, size, w, h, f, itdepth, bound, im, x, y);
-						images[fn][fm] = im;
+						mbim.calc(image, xo, yo, w, h);
+						images[fix][fiy] = image;
 						repaint();
 					}
 				});
@@ -192,42 +194,16 @@ public class MBJComponent extends JComponent {
 		MBJFrame.QUEUE.addAll(l);
 	}
 	
-	private static void subcalc(final Complex origin, final Complex size, final int w, final int h, final MBFunction f, final int itdepth, final double bound, final BufferedImage im, final int xo, final int yo) {
-		//		System.out.println("subcalc " + xo + ", " + yo);
-		final Complex z = new Complex();
-		final Complex p = new Complex();
-		final int iw = im.getWidth();
-		final int ih = im.getHeight();
-		final double boundsq = bound * bound;
-		for (int x = 0; x < iw; x+=1) {
-			for (int y = 0; y < ih; y+=1) {
-				p.set(size);
-				p.scale(xo + x, yo + y, w, h);
-				p.add(origin);
-				z.set(p);
-				int i;
-				for (i = 0; i < itdepth; i++) {
-					f.apply(z, p);
-					if (z.getAbsSq() > boundsq) {
-						break;
-					}
-				}
-				i = (i * 255) / itdepth;
-				im.setRGB(x, y, i | i << 8 | i << 16);
-			}
-		}
-	}
-
 	public void setMBFunction (MBFunction f) {
-		this.f = f;
+		this.mbFunction = f;
 	}
 
 	public void setItDepth (int itdepth) {
-		this.itdepth = itdepth;
+		this.iterationDepth = itdepth;
 	}
 	
 	public int getItdepth () {
-		return itdepth;
+		return iterationDepth;
 	}
 	
 	public double getBound () {
