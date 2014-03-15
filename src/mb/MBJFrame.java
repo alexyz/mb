@@ -9,6 +9,7 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.imageio.ImageIO;
 import javax.swing.JButton;
@@ -17,6 +18,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSpinner;
 import javax.swing.SpinnerNumberModel;
+import javax.swing.SwingUtilities;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
@@ -29,24 +31,22 @@ import javax.swing.event.ChangeListener;
  */
 public class MBJFrame extends JFrame {
 	
-	public static final BlockingQueue<Runnable> QUEUE = new LinkedBlockingQueue<>();
+	public static final MBJFrame instance = new MBJFrame();
 	
 	public static void main (final String[] args) {
-		final JFrame f = new MBJFrame();
-		f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		f.setSize(640, 480);
-		f.repaint();
-		f.show();
-		final int procs = Runtime.getRuntime().availableProcessors();
-		System.out.println("procs: " + procs);
-		for (int n = 0; n < procs; n++) {
-			new WorkerThread(n).start();
-		}
+		instance.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		instance.setSize(640, 480);
+		instance.repaint();
+		instance.setVisible(true);
 	}
 	
+	public final BlockingQueue<Runnable> queue = new LinkedBlockingQueue<>();
+	private final MBJComponent mbComp;
+	private final AtomicInteger running = new AtomicInteger();
+	private String position;
+	
 	public MBJFrame () {
-		final MBJComponent mbComp = new MBJComponent();
-		mbComp.setMBFunction(MBFunction.sqpc);
+		mbComp = new MBJComponent();
 		
 		final JSpinner powerSpinner = new JSpinner(new SpinnerNumberModel(2.0, 1.01, 4.00, 0.001));
 		powerSpinner.addChangeListener(new ChangeListener() {
@@ -55,61 +55,66 @@ public class MBJFrame extends JFrame {
 				double v = (Double) powerSpinner.getValue();
 				v = Math.round(v * 1000) / 1000.0;
 				powerSpinner.setValue(v);
-				mbComp.setMBFunction(v == 2 ? MBFunction.sqpc : MBFunction.powpc(v));
+				mbComp.getMbImage().mbFunction = MBFunction.getFunction(v);
 				mbComp.reimage();
 			}
 		});
 		
-		final JSpinner itSpinner = new JSpinner(new SpinnerNumberModel(mbComp.getItdepth(), 15, 255, 16));
+		final JSpinner itSpinner = new JSpinner(new SpinnerNumberModel(mbComp.getMbImage().iterationDepth, 15, 255, 16));
 		itSpinner.addChangeListener(new ChangeListener() {
 			@Override
 			public void stateChanged (ChangeEvent e) {
-				mbComp.setItDepth((Integer) itSpinner.getValue());
+				mbComp.getMbImage().iterationDepth = (Integer) itSpinner.getValue();
 				mbComp.reimage();
 			}
 		});
 		
-		final JSpinner boundSpinner = new JSpinner(new SpinnerNumberModel(mbComp.getBound(), 0.5, 10, 0.1));
+		final JSpinner boundSpinner = new JSpinner(new SpinnerNumberModel(mbComp.getMbImage().bound, 0.5, 10, 0.1));
 		boundSpinner.addChangeListener(new ChangeListener() {
 			@Override
 			public void stateChanged (ChangeEvent e) {
-				mbComp.setBound((Double) boundSpinner.getValue());
+				mbComp.getMbImage().bound = (Double) boundSpinner.getValue();
 				mbComp.reimage();
 			}
 		});
 		
-		final JButton resetButton = new JButton("Reset");
+		final JButton resetButton = new JButton("Centre");
 		resetButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed (ActionEvent e) {
-				mbComp.reset();
+				mbComp.recentre();
+				mbComp.reimage();
 			}
 		});
 		
-		final JButton saveButton = new JButton("Export");
-		saveButton.addActionListener(new ActionListener() {
+		final JButton exportButton = new JButton("Export");
+		exportButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed (ActionEvent ae) {
-				DisplayMode dm = getGraphicsConfiguration().getDevice().getDisplayMode();
-				long t = System.nanoTime();
-				BufferedImage image = mbComp.export(dm.getWidth(), dm.getHeight());
-				t = System.nanoTime() - t;
-				System.out.println("export time: " + (t / 1000000.0) + " ms");
-				int n = 0;
-				while (true) {
-					File f = new File("mbimage" + n + ".png");
-					if (!f.exists()) {
-						try {
-							System.out.println("write " + f.getAbsolutePath());
-							ImageIO.write(image, "png", f);
-							break;
-						} catch (Exception e) {
-							throw new RuntimeException(e);
+				final DisplayMode dm = getGraphicsConfiguration().getDevice().getDisplayMode();
+				queue.add(new Runnable() {
+					@Override
+					public void run () {
+						long t = System.nanoTime();
+						BufferedImage image = export(dm.getWidth(), dm.getHeight());
+						t = System.nanoTime() - t;
+						System.out.println("export time: " + (t / 1000000.0) + " ms");
+						int n = 0;
+						while (true) {
+							File f = new File("mbimage" + n + ".png");
+							if (!f.exists()) {
+								try {
+									System.out.println("write " + f.getAbsolutePath());
+									ImageIO.write(image, "png", f);
+									break;
+								} catch (Exception e) {
+									throw new RuntimeException(e);
+								}
+							}
+							n++;
 						}
 					}
-					n++;
-				}
-				
+				});
 			}
 		});
 		
@@ -120,23 +125,40 @@ public class MBJFrame extends JFrame {
 		buttonPanel.add(itSpinner);
 		buttonPanel.add(new JLabel("Bound"));
 		buttonPanel.add(boundSpinner);
-		buttonPanel.add(saveButton);
 		buttonPanel.add(resetButton);
+		buttonPanel.add(exportButton);
 		
 		JPanel contentPanel = new JPanel(new BorderLayout());
 		contentPanel.add(buttonPanel, BorderLayout.NORTH);
 		contentPanel.add(mbComp, BorderLayout.CENTER);
 		getContentPane().add(contentPanel);
+		
 		mbComp.addPropertyChangeListener("title", new PropertyChangeListener() {
 			@Override
 			public void propertyChange (PropertyChangeEvent arg0) {
-				setTitle(arg0.getNewValue().toString());
+				position = arg0.getNewValue().toString();
+				updateTitle();
 			}
 		});
 		
+		final int procs = Runtime.getRuntime().availableProcessors();
+		System.out.println("procs: " + procs);
+		for (int n = 0; n < procs; n++) {
+			new WorkerThread(n).start();
+		}
 	}
 	
-	private static class WorkerThread extends Thread {
+	private void updateTitle () {
+		setTitle(String.format("MBEx [%s] [%d]", position, queue.size() + running.get()));
+	}
+	
+	private BufferedImage export(int w, int h) {
+		BufferedImage image = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
+		new MBImage(mbComp.getMbImage()).calc(image, 0, 0, w, h);
+		return image;
+	}
+	
+	private class WorkerThread extends Thread {
 		public WorkerThread (int n) {
 			setName("Worker-" + n);
 			setPriority(Thread.MIN_PRIORITY);
@@ -146,7 +168,16 @@ public class MBJFrame extends JFrame {
 		public void run () {
 			while (true) {
 				try {
-					QUEUE.take().run();
+					Runnable r = queue.take();
+					running.incrementAndGet();
+					r.run();
+					running.decrementAndGet();
+					SwingUtilities.invokeLater(new Runnable() {
+						@Override
+						public void run () {
+							updateTitle();
+						}
+					});
 				} catch (final Exception e) {
 					e.printStackTrace();
 				}

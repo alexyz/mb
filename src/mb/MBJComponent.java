@@ -15,27 +15,12 @@ public class MBJComponent extends JComponent {
 	private static int TILEWIDTH = 75;
 	private static int TILEHEIGHT = 75;
 	
-	private int iterationDepth = 255;
-	private double bound = 4;
-	private MBFunction mbFunction;
-	private Complex origin, size;
+	private final MBImage mbImage;
 	private Point p1, p2;
 	private Image[][] images;
 	
-	void reset() {
-		System.out.println("reset");
-		origin = new Complex(-3, -1.5);
-		size = new Complex(4, 3);
-		reimage();
-	}
-	
-	void reimage() {
-		images = null;
-		repaint();
-	}
-	
 	public MBJComponent() {
-		reset();
+		mbImage = new MBImage();
 		addMouseListener(new MouseAdapter() {
 			@Override
 			public void mousePressed(final MouseEvent e) {
@@ -61,8 +46,8 @@ public class MBJComponent extends JComponent {
 						s.sub(o);
 						System.out.println("o=" + o);
 						System.out.println("s=" + s);
-						origin = o;
-						size = s;
+						mbImage.origin = o;
+						mbImage.size = s;
 						recalc();
 					}
 					p1 = null;
@@ -96,25 +81,39 @@ public class MBJComponent extends JComponent {
 			}
 		});
 	}
+	
+	void recentre() {
+		System.out.println("recentre");
+		mbImage.centre();
+//		origin = new Complex(-3, -1.5);
+//		size = new Complex(4, 3);
+	}
+	
+	void reimage() {
+		System.out.println("reimage");
+		images = null;
+		repaint();
+	}
+	
 	private void popup (MouseEvent e) {
 		System.out.println("popup");
-		JPopupMenu menu = new JPopupMenu();
-		JMenuItem resetItem = new JMenuItem("Reset");
-		resetItem.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed (ActionEvent e) {
-				reset();
-			}
-		});
-		menu.add(resetItem);
-		menu.show(this, e.getX(), e.getY());
+//		JPopupMenu menu = new JPopupMenu();
+//		JMenuItem resetItem = new JMenuItem("Reset");
+//		resetItem.addActionListener(new ActionListener() {
+//			@Override
+//			public void actionPerformed (ActionEvent e) {
+//				reset();
+//			}
+//		});
+//		menu.add(resetItem);
+//		menu.show(this, e.getX(), e.getY());
 	}
 	
 	private Complex viewToModel(final int x, final int y) {
-		final Complex c = new Complex(size);
+		final Complex c = new Complex(mbImage.size);
 		c.smul(x, y);
 		c.sdiv(getWidth(), getHeight());
-		c.add(origin);
+		c.add(mbImage.origin);
 		return c;
 	}
 	
@@ -151,23 +150,15 @@ public class MBJComponent extends JComponent {
 		}
 	}
 	
-	public BufferedImage export(int w, int h) {
-		BufferedImage image = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
-		final MBImage mbim = new MBImage(origin, size, mbFunction, iterationDepth, bound);
-		mbim.calc(image, 0, 0, w, h);
-		return image;
-	}
-	
 	private void recalc() {
 		System.out.println("recalc");
-		MBJFrame.QUEUE.clear();
+		MBJFrame.instance.queue.clear();
 		
 		final int w = getWidth(), h = getHeight();
 		final int xi = (w + TILEWIDTH - 1) / TILEWIDTH;
 		final int yi = (h + TILEHEIGHT - 1) / TILEHEIGHT;
 		final Image[][] images = new Image[xi][yi];
 		this.images = images;
-		final MBImage mbim = new MBImage(origin, size, mbFunction, iterationDepth, bound);
 		final List<Runnable> l = new ArrayList<>();
 		
 		for (int ix = 0; ix < images.length; ix++) {
@@ -182,7 +173,7 @@ public class MBJComponent extends JComponent {
 					@Override
 					public void run() {
 						// no field accesses
-						mbim.calc(image, xo, yo, w, h);
+						mbImage.calc(image, xo, yo, w, h);
 						images[fix][fiy] = image;
 						repaint();
 					}
@@ -191,26 +182,11 @@ public class MBJComponent extends JComponent {
 		}
 		
 		Collections.shuffle(l);
-		MBJFrame.QUEUE.addAll(l);
+		MBJFrame.instance.queue.addAll(l);
 	}
 	
-	public void setMBFunction (MBFunction f) {
-		this.mbFunction = f;
-	}
-
-	public void setItDepth (int itdepth) {
-		this.iterationDepth = itdepth;
+	public MBImage getMbImage () {
+		return mbImage;
 	}
 	
-	public int getItdepth () {
-		return iterationDepth;
-	}
-	
-	public double getBound () {
-		return bound;
-	}
-	
-	public void setBound (double bound) {
-		this.bound = bound;
-	}
 }

@@ -66,6 +66,10 @@ final class Complex {
 		set(re * c.re - im * c.im, im * c.re + re * c.im);
 	}
 	
+	public final void mul (double re2, double im2) {
+		set(re * re2 - im * im2, im * re2 + re * im2);
+	}
+	
 	public final void smul (double s) {
 		re *= s;
 		im *= s;
@@ -81,6 +85,11 @@ final class Complex {
 		im += c.im;
 	}
 	
+	public final void add (double re2, double im2) {
+		re += re2;
+		im += im2;
+	}
+	
 	public final void sub (Complex c) {
 		re -= c.re;
 		im -= c.im;
@@ -90,5 +99,5 @@ final class Complex {
 	public String toString () {
 		return String.format("%f%+fi", re, im);
 	}
-	
+
 }
