@@ -1,5 +1,6 @@
 package mb;
 
+@Deprecated
 abstract class MBFunction {
 	
 	public static MBFunction getFunction(double power) {
@@ -16,9 +17,9 @@ abstract class MBFunction {
 	
 	public static MBFunction sqpc = new MBFunction() {
 		@Override
-		public final void apply (Complex z, Complex p) {
+		public final void apply (Complex z, Complex c) {
 			z.mul(z);
-			z.add(p);
+			z.add(c);
 		}
 	};
 	

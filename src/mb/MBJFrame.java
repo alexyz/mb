@@ -2,25 +2,16 @@ package mb;
 
 import java.awt.BorderLayout;
 import java.awt.DisplayMode;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.event.*;
 import java.awt.image.BufferedImage;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
+import java.beans.*;
 import java.io.File;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.imageio.ImageIO;
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JSpinner;
-import javax.swing.SpinnerNumberModel;
-import javax.swing.SwingUtilities;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
+import javax.swing.*;
+import javax.swing.event.*;
 
 /*
  * TODO
@@ -55,12 +46,12 @@ public class MBJFrame extends JFrame {
 				double v = (Double) powerSpinner.getValue();
 				v = Math.round(v * 1000) / 1000.0;
 				powerSpinner.setValue(v);
-				mbComp.getMbImage().mbFunction = MBFunction.getFunction(v);
+				mbComp.getMbImage().mbIteration = MBIteration.getMBIteration(v);
 				mbComp.reimage();
 			}
 		});
 		
-		final JSpinner itSpinner = new JSpinner(new SpinnerNumberModel(mbComp.getMbImage().iterationDepth, 15, 255, 16));
+		final JSpinner itSpinner = new JSpinner(new SpinnerNumberModel(mbComp.getMbImage().iterationDepth, 31, 255, 32));
 		itSpinner.addChangeListener(new ChangeListener() {
 			@Override
 			public void stateChanged (ChangeEvent e) {
@@ -69,10 +60,12 @@ public class MBJFrame extends JFrame {
 			}
 		});
 		
-		final JSpinner boundSpinner = new JSpinner(new SpinnerNumberModel(mbComp.getMbImage().bound, 0.5, 10, 0.1));
+		final JSpinner boundSpinner = new JSpinner(new SpinnerNumberModel(mbComp.getMbImage().bound, 0.5, 16, 0.1));
 		boundSpinner.addChangeListener(new ChangeListener() {
 			@Override
 			public void stateChanged (ChangeEvent e) {
+				double v = (Double) boundSpinner.getValue();
+				v = Math.round(v * 10) / 10.0;
 				mbComp.getMbImage().bound = (Double) boundSpinner.getValue();
 				mbComp.reimage();
 			}
@@ -91,12 +84,13 @@ public class MBJFrame extends JFrame {
 		exportButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed (ActionEvent ae) {
-				final DisplayMode dm = getGraphicsConfiguration().getDevice().getDisplayMode();
+				//final DisplayMode dm = getGraphicsConfiguration().getDevice().getDisplayMode();
 				queue.add(new Runnable() {
 					@Override
 					public void run () {
 						long t = System.nanoTime();
-						BufferedImage image = export(dm.getWidth(), dm.getHeight());
+						//BufferedImage image = export(dm.getWidth(), dm.getHeight());
+						BufferedImage image = export();
 						t = System.nanoTime() - t;
 						System.out.println("export time: " + (t / 1000000.0) + " ms");
 						int n = 0;
@@ -152,9 +146,14 @@ public class MBJFrame extends JFrame {
 		setTitle(String.format("MBEx [%s] [%d]", position, queue.size() + running.get()));
 	}
 	
-	private BufferedImage export(int w, int h) {
+	private BufferedImage export() {
+		int w = 1920;
+		int h = 1080;
 		BufferedImage image = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
-		new MBImage(mbComp.getMbImage()).calc(image, 0, 0, w, h);
+		MBImage mbImage = new MBImage(mbComp.getMbImage());
+		mbImage.bound = 16;
+		mbImage.iterationDepth = 255;
+		mbImage.calc(image, 0, 0, w, h);
 		return image;
 	}
 	

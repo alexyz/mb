@@ -7,8 +7,6 @@ import java.util.*;
 import java.util.List;
 
 import javax.swing.JComponent;
-import javax.swing.JMenuItem;
-import javax.swing.JPopupMenu;
 
 public class MBJComponent extends JComponent {
 	
@@ -85,8 +83,6 @@ public class MBJComponent extends JComponent {
 	void recentre() {
 		System.out.println("recentre");
 		mbImage.centre();
-//		origin = new Complex(-3, -1.5);
-//		size = new Complex(4, 3);
 	}
 	
 	void reimage() {

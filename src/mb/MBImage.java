@@ -2,19 +2,20 @@ package mb;
 
 import java.awt.image.BufferedImage;
 import java.awt.image.WritableRaster;
-import java.util.Arrays;
 
 public class MBImage {
 	
 	public Complex origin;
 	public Complex size;
-	public MBFunction mbFunction;
 	public int iterationDepth;
 	public double bound;
+	public MBIteration mbIteration;
 	
 	public MBImage () {
-		mbFunction = MBFunction.sqpc;
+		mbIteration = MBIteration.sqpc;
 		iterationDepth = 255;
+		// 2 is max required for square+c
+		// other pow might need more
 		bound = 4;
 		centre();
 	}
@@ -22,7 +23,7 @@ public class MBImage {
 	public MBImage (MBImage other) {
 		bound = other.bound;
 		iterationDepth = other.iterationDepth;
-		mbFunction = other.mbFunction;
+		mbIteration = other.mbIteration;
 		origin = new Complex(other.origin);
 		size = new Complex(other.size);
 	}
@@ -37,7 +38,6 @@ public class MBImage {
 		final Complex c = new Complex();
 		final int iw = image.getWidth();
 		final int ih = image.getHeight();
-		final double boundsq = bound * bound;
 		final int[] a = new int[3];
 		final WritableRaster r = image.getRaster();
 		
@@ -47,15 +47,12 @@ public class MBImage {
 				c.smul(xo + x, yo + y);
 				c.sdiv(w, h);
 				c.add(origin);
+				// z[0]
 				z.set(c);
-				int i;
-				for (i = 0; i < iterationDepth; i++) {
-					mbFunction.apply(z, c);
-					if (z.getAbsSq() > boundsq) {
-						break;
-					}
+				int i = mbIteration.iterate(z, c, iterationDepth, bound);
+				if (iterationDepth != 255) {
+					i = (i * 255) / iterationDepth;
 				}
-				i = (i * 255) / iterationDepth;
 				// image.setRGB(x, y, i | i << 8 | i << 16);
 				a[0] = i;
 				a[1] = i;

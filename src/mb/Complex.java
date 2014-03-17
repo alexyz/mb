@@ -21,12 +21,18 @@ final class Complex {
 	}
 	
 	public final void log () {
-		set(Math.log(getAbs()), Math.atan2(im, re));
+		double re2 = Math.log(getAbs());
+		double im2 = Math.atan2(im, re);
+		re = re2;
+		im = im2;
 	}
 	
 	public final void exp () {
 		double er = Math.exp(re);
-		set(er * Math.cos(im), er * Math.sin(im));
+		double re2 = er * Math.cos(im);
+		double im2 = er * Math.sin(im);
+		re = re2;
+		im = im2;
 	}
 	
 	public final void smul (double x, double y) {
@@ -44,6 +50,7 @@ final class Complex {
 		exp();
 	}
 	
+	/** very slow */
 	public double getAbs () {
 		return Math.hypot(re, im);
 	}
@@ -62,12 +69,25 @@ final class Complex {
 		this.im = i;
 	}
 	
+	public final void sq () {
+		double re2 = re * re - im * im;
+		double im2 = 2.0 * re * im;
+		re = re2;
+		im = im2;
+	}
+	
 	public final void mul (Complex c) {
-		set(re * c.re - im * c.im, im * c.re + re * c.im);
+		double re2 = re * c.re - im * c.im;
+		double im2 = im * c.re + re * c.im;
+		re = re2;
+		im = im2;
 	}
 	
 	public final void mul (double re2, double im2) {
-		set(re * re2 - im * im2, im * re2 + re * im2);
+		double re3 = re * re2 - im * im2;
+		double im3 = im * re2 + re * im2;
+		re = re3;
+		im = im3;
 	}
 	
 	public final void smul (double s) {
@@ -93,6 +113,13 @@ final class Complex {
 	public final void sub (Complex c) {
 		re -= c.re;
 		im -= c.im;
+	}
+	
+	public final void sin () {
+		double re2 = Math.sin(re) * Math.cosh(im);
+		double im2 = Math.cos(re) * Math.sinh(im);
+		re = re2;
+		im = im2;
 	}
 	
 	@Override
