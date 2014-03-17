@@ -39,17 +39,26 @@ public class MBJFrame extends JFrame {
 	public MBJFrame () {
 		mbComp = new MBJComponent();
 		
-		final JSpinner powerSpinner = new JSpinner(new SpinnerNumberModel(2.0, 1.01, 4.00, 0.001));
-		powerSpinner.addChangeListener(new ChangeListener() {
+		final JComboBox functionCombo = new JComboBox(new DefaultComboBoxModel(MBIteration.ALL));
+		functionCombo.addItemListener(new ItemListener() {
 			@Override
-			public void stateChanged (ChangeEvent e) {
-				double v = (Double) powerSpinner.getValue();
-				v = Math.round(v * 1000) / 1000.0;
-				powerSpinner.setValue(v);
-				mbComp.getMbImage().mbIteration = MBIteration.getMBIteration(v);
+			public void itemStateChanged (ItemEvent e) {
+				mbComp.getMbImage().mbIteration = (MBIteration) e.getItem();
 				mbComp.reimage();
 			}
 		});
+		
+//		final JSpinner powerSpinner = new JSpinner(new SpinnerNumberModel(2.0, 1.01, 4.00, 0.001));
+//		powerSpinner.addChangeListener(new ChangeListener() {
+//			@Override
+//			public void stateChanged (ChangeEvent e) {
+//				double v = (Double) powerSpinner.getValue();
+//				v = Math.round(v * 1000) / 1000.0;
+//				powerSpinner.setValue(v);
+//				mbComp.getMbImage().mbIteration = MBIteration.getMBIteration(v);
+//				mbComp.reimage();
+//			}
+//		});
 		
 		final JSpinner itSpinner = new JSpinner(new SpinnerNumberModel(mbComp.getMbImage().iterationDepth, 31, 255, 32));
 		itSpinner.addChangeListener(new ChangeListener() {
@@ -113,8 +122,10 @@ public class MBJFrame extends JFrame {
 		});
 		
 		JPanel buttonPanel = new JPanel();
-		buttonPanel.add(new JLabel("Power"));
-		buttonPanel.add(powerSpinner);
+		buttonPanel.add(new JLabel("Function"));
+		buttonPanel.add(functionCombo);
+//		buttonPanel.add(new JLabel("Power"));
+//		buttonPanel.add(powerSpinner);
 		buttonPanel.add(new JLabel("Depth"));
 		buttonPanel.add(itSpinner);
 		buttonPanel.add(new JLabel("Bound"));

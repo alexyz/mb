@@ -6,36 +6,36 @@ package mb;
 final class Complex {
 	public double re, im;
 	
-	public Complex (double r, double i) {
-		this.re = r;
-		this.im = i;
+	public Complex (final double r, final double i) {
+		re = r;
+		im = i;
 	}
 	
 	public Complex () {
 		//
 	}
 	
-	public Complex (Complex c) {
-		this.re = c.re;
-		this.im = c.im;
+	public Complex (final Complex c) {
+		re = c.re;
+		im = c.im;
 	}
 	
 	public final void log () {
-		double re2 = Math.log(getAbs());
-		double im2 = Math.atan2(im, re);
+		final double re2 = Math.log(getAbs());
+		final double im2 = Math.atan2(im, re);
 		re = re2;
 		im = im2;
 	}
 	
 	public final void exp () {
-		double er = Math.exp(re);
-		double re2 = er * Math.cos(im);
-		double im2 = er * Math.sin(im);
+		final double er = Math.exp(re);
+		final double re2 = er * Math.cos(im);
+		final double im2 = er * Math.sin(im);
 		re = re2;
 		im = im2;
 	}
 	
-	public final void smul (double x, double y) {
+	public final void smul (final double x, final double y) {
 		re *= x;
 		im *= y;
 	}
@@ -44,7 +44,7 @@ final class Complex {
 		im = -im;
 	}
 	
-	public final void pow (double n) {
+	public final void pow (final double n) {
 		log();
 		smul(n);
 		exp();
@@ -59,65 +59,85 @@ final class Complex {
 		return re * re + im * im;
 	}
 	
-	public final void set (Complex c) {
-		this.re = c.re;
-		this.im = c.im;
+	public final void set (final Complex c) {
+		re = c.re;
+		im = c.im;
 	}
 	
-	public final void set (double r, double i) {
-		this.re = r;
-		this.im = i;
+	public final void set (final double r, final double i) {
+		re = r;
+		im = i;
 	}
 	
 	public final void sq () {
-		double re2 = re * re - im * im;
-		double im2 = 2.0 * re * im;
+		final double re2 = re * re - im * im;
+		final double im2 = 2.0 * re * im;
 		re = re2;
 		im = im2;
 	}
 	
-	public final void mul (Complex c) {
-		double re2 = re * c.re - im * c.im;
-		double im2 = im * c.re + re * c.im;
+	public final void cu () {
+		// aaa - 3abb + i(3aab - bbb)
+		final double re2 = re * re * re - 3 * re * im * im;
+		final double im2 = 3 * re * re * im - im * im * im;
 		re = re2;
 		im = im2;
 	}
 	
-	public final void mul (double re2, double im2) {
-		double re3 = re * re2 - im * im2;
-		double im3 = im * re2 + re * im2;
+	public final void mul (final Complex c) {
+		final double re2 = re * c.re - im * c.im;
+		final double im2 = im * c.re + re * c.im;
+		re = re2;
+		im = im2;
+	}
+	
+	public final void mul (final double re2, final double im2) {
+		final double re3 = re * re2 - im * im2;
+		final double im3 = im * re2 + re * im2;
 		re = re3;
 		im = im3;
 	}
 	
-	public final void smul (double s) {
+	public final void smul (final double s) {
 		re *= s;
 		im *= s;
 	}
 	
-	public final void sdiv (double x, double y) {
+	public final void div (Complex c) {
+		div(c.re, c.im);
+	}
+	
+	public final void div (final double re2, final double im2) {
+		final double re3 = re * re2 + im * im2;
+		final double im3 = im * re2 - re * im2;
+		final double abssq2 = re2 * re2 + im2 * im2;
+		re = re3 / abssq2;
+		im = im3 / abssq2;
+	}
+	
+	public final void sdiv (final double x, final double y) {
 		re /= x;
 		im /= y;
 	}
 	
-	public final void add (Complex c) {
+	public final void add (final Complex c) {
 		re += c.re;
 		im += c.im;
 	}
 	
-	public final void add (double re2, double im2) {
+	public final void add (final double re2, final double im2) {
 		re += re2;
 		im += im2;
 	}
 	
-	public final void sub (Complex c) {
+	public final void sub (final Complex c) {
 		re -= c.re;
 		im -= c.im;
 	}
 	
 	public final void sin () {
-		double re2 = Math.sin(re) * Math.cosh(im);
-		double im2 = Math.cos(re) * Math.sinh(im);
+		final double re2 = Math.sin(re) * Math.cosh(im);
+		final double im2 = Math.cos(re) * Math.sinh(im);
 		re = re2;
 		im = im2;
 	}
@@ -126,5 +146,5 @@ final class Complex {
 	public String toString () {
 		return String.format("%f%+fi", re, im);
 	}
-
+	
 }

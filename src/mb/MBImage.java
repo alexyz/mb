@@ -12,7 +12,7 @@ public class MBImage {
 	public MBIteration mbIteration;
 	
 	public MBImage () {
-		mbIteration = MBIteration.sqpc;
+		mbIteration = MBIteration.SQUARE_ADD_C;
 		iterationDepth = 255;
 		// 2 is max required for square+c
 		// other pow might need more
