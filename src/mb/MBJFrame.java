@@ -2,6 +2,8 @@ package mb;
 
 import java.awt.BorderLayout;
 import java.awt.DisplayMode;
+import java.awt.GridLayout;
+import java.awt.Insets;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.beans.*;
@@ -39,7 +41,7 @@ public class MBJFrame extends JFrame {
 	public MBJFrame () {
 		mbComp = new MBJComponent();
 		
-		final JComboBox functionCombo = new JComboBox(new DefaultComboBoxModel(MBIteration.ALL));
+		final JComboBox<MBIteration> functionCombo = new JComboBox<>(new DefaultComboBoxModel<>(MBIteration.all()));
 		functionCombo.addItemListener(new ItemListener() {
 			@Override
 			public void itemStateChanged (ItemEvent e) {
@@ -80,8 +82,9 @@ public class MBJFrame extends JFrame {
 			}
 		});
 		
-		final JButton resetButton = new JButton("Centre");
-		resetButton.addActionListener(new ActionListener() {
+		final JButton centreButton = new JButton("Centre");
+		centreButton.setMargin(new Insets(0,0,0,0));
+		centreButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed (ActionEvent e) {
 				mbComp.recentre();
@@ -90,6 +93,7 @@ public class MBJFrame extends JFrame {
 		});
 		
 		final JButton exportButton = new JButton("Export");
+		exportButton.setMargin(new Insets(0,0,0,0));
 		exportButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed (ActionEvent ae) {
@@ -130,7 +134,7 @@ public class MBJFrame extends JFrame {
 		buttonPanel.add(itSpinner);
 		buttonPanel.add(new JLabel("Bound"));
 		buttonPanel.add(boundSpinner);
-		buttonPanel.add(resetButton);
+		buttonPanel.add(centreButton);
 		buttonPanel.add(exportButton);
 		
 		JPanel contentPanel = new JPanel(new BorderLayout());

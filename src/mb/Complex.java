@@ -35,7 +35,7 @@ final class Complex {
 		im = im2;
 	}
 	
-	public final void smul (final double x, final double y) {
+	public final void rmul (final double x, final double y) {
 		re *= x;
 		im *= y;
 	}
@@ -46,7 +46,13 @@ final class Complex {
 	
 	public final void pow (final double n) {
 		log();
-		smul(n);
+		rmul(n);
+		exp();
+	}
+	
+	public final void pow (final double re2, final double im2) {
+		log();
+		mul(re2, im2);
 		exp();
 	}
 	
@@ -78,10 +84,12 @@ final class Complex {
 	
 	public final void cu () {
 		// aaa - 3abb + i(3aab - bbb)
-		final double re2 = re * re * re - 3 * re * im * im;
-		final double im2 = 3 * re * re * im - im * im * im;
-		re = re2;
-		im = im2;
+		final double resq = re * re;
+		final double imsq = im * im;
+		final double reRes = resq * re - 3 * re * imsq;
+		final double imRes = 3 * resq * im - imsq * im;
+		re = reRes;
+		im = imRes;
 	}
 	
 	public final void mul (final Complex c) {
@@ -98,7 +106,7 @@ final class Complex {
 		im = im3;
 	}
 	
-	public final void smul (final double s) {
+	public final void rmul (final double s) {
 		re *= s;
 		im *= s;
 	}
@@ -115,7 +123,7 @@ final class Complex {
 		im = im3 / abssq2;
 	}
 	
-	public final void sdiv (final double x, final double y) {
+	public final void rdiv (final double x, final double y) {
 		re /= x;
 		im /= y;
 	}

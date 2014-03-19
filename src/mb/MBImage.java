@@ -44,8 +44,8 @@ public class MBImage {
 		for (int y = 0; y < ih; y++) {
 			for (int x = 0; x < iw; x++) {
 				c.set(size);
-				c.smul(xo + x, yo + y);
-				c.sdiv(w, h);
+				c.rmul(xo + x, yo + y);
+				c.rdiv(w, h);
 				c.add(origin);
 				// z[0]
 				z.set(c);

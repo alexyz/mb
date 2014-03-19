@@ -107,8 +107,8 @@ public class MBJComponent extends JComponent {
 	
 	private Complex viewToModel(final int x, final int y) {
 		final Complex c = new Complex(mbImage.size);
-		c.smul(x, y);
-		c.sdiv(getWidth(), getHeight());
+		c.rmul(x, y);
+		c.rdiv(getWidth(), getHeight());
 		c.add(mbImage.origin);
 		return c;
 	}
