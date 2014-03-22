@@ -8,6 +8,9 @@ import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.beans.*;
 import java.io.File;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -15,13 +18,6 @@ import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.event.*;
 
-/*
- * TODO
- * menu (reset, itdepth, function, bb...)
- * right click to cancel zoom
- * pan/zoom controls [ < > ^ v + - r i w h ]
- * image save
- */
 public class MBJFrame extends JFrame {
 	
 	public static final MBJFrame instance = new MBJFrame();
@@ -36,7 +32,6 @@ public class MBJFrame extends JFrame {
 	public final BlockingQueue<Runnable> queue = new LinkedBlockingQueue<>();
 	private final MBJComponent mbComp;
 	private final AtomicInteger running = new AtomicInteger();
-	private String position;
 	
 	public MBJFrame () {
 		mbComp = new MBJComponent();
@@ -97,31 +92,24 @@ public class MBJFrame extends JFrame {
 		exportButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed (ActionEvent ae) {
-				//final DisplayMode dm = getGraphicsConfiguration().getDevice().getDisplayMode();
 				queue.add(new Runnable() {
 					@Override
 					public void run () {
 						long t = System.nanoTime();
-						//BufferedImage image = export(dm.getWidth(), dm.getHeight());
 						BufferedImage image = export();
 						t = System.nanoTime() - t;
 						System.out.println("export time: " + (t / 1000000.0) + " ms");
-						int n = 0;
-						while (true) {
-							File f = new File("mbimage" + n + ".png");
-							if (!f.exists()) {
-								try {
-									System.out.println("write " + f.getAbsolutePath());
-									ImageIO.write(image, "png", f);
-									break;
-								} catch (Exception e) {
-									throw new RuntimeException(e);
-								}
-							}
-							n++;
+						String date = new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date());
+						File f = new File("mbimage." + date + ".png");
+						try {
+							ImageIO.write(image, "png", f);
+							System.out.println("wrote " + f);
+						} catch (Exception e) {
+							JOptionPane.showMessageDialog(MBJFrame.this, "could not write " + f + ":\n" + e.toString());
 						}
 					}
 				});
+				updateTitle();
 			}
 		});
 		
@@ -142,13 +130,14 @@ public class MBJFrame extends JFrame {
 		contentPanel.add(mbComp, BorderLayout.CENTER);
 		getContentPane().add(contentPanel);
 		
-		mbComp.addPropertyChangeListener("title", new PropertyChangeListener() {
+		mbComp.addPropertyChangeListener(MBJComponent.POSITION, new PropertyChangeListener() {
 			@Override
 			public void propertyChange (PropertyChangeEvent arg0) {
-				position = arg0.getNewValue().toString();
 				updateTitle();
 			}
 		});
+		
+		updateTitle();
 		
 		final int procs = Runtime.getRuntime().availableProcessors();
 		System.out.println("procs: " + procs);
@@ -158,7 +147,13 @@ public class MBJFrame extends JFrame {
 	}
 	
 	private void updateTitle () {
-		setTitle(String.format("MBEx [%s] [%d]", position, queue.size() + running.get()));
+		MBImage i = mbComp.getMbImage();
+		Complex o = new Complex(i.origin);
+		Complex s = new Complex(i.size);
+		s.div(2, 0);
+		o.add(s);
+		String p = o + ", " + i.size;
+		setTitle(String.format("MBEx [%s] [%d]", p, queue.size() + running.get()));
 	}
 	
 	private BufferedImage export() {
@@ -168,7 +163,7 @@ public class MBJFrame extends JFrame {
 		MBImage mbImage = new MBImage(mbComp.getMbImage());
 		mbImage.bound = 16;
 		mbImage.iterationDepth = 255;
-		mbImage.calc(image, 0, 0, w, h);
+		mbImage.calc(image.getRaster(), 0, 0, w, h, null);
 		return image;
 	}
 	

@@ -10,42 +10,41 @@ import javax.swing.JComponent;
 
 public class MBJComponent extends JComponent {
 	
+	public static final String POSITION = "position";
 	private static int TILEWIDTH = 75;
 	private static int TILEHEIGHT = 75;
 	
 	private final MBImage mbImage;
 	private Point p1, p2;
 	private Image[][] images;
+	private Complex jp;
 	
 	public MBJComponent() {
 		mbImage = new MBImage();
 		addMouseListener(new MouseAdapter() {
 			@Override
 			public void mousePressed(final MouseEvent e) {
-				if (e.isPopupTrigger()) {
-					popup(e);
-				} else if (e.getButton() == MouseEvent.BUTTON1) {
+				if (e.getButton() == MouseEvent.BUTTON1) {
 					p1 = e.getPoint();
 				}
 			}
 			
 			@Override
 			public void mouseReleased(final MouseEvent e) {
-				if (e.isPopupTrigger()) {
-					popup(e);
-				} else if (e.getButton() == MouseEvent.BUTTON1) {
+				if (e.getButton() == MouseEvent.BUTTON1) {
 					if (p1 != null && p2 != null) {
 						int x1 = Math.min(p1.x, p2.x);
 						int y1 = Math.min(p1.y, p2.y);
 						int x2 = Math.max(p1.x, p2.x);
 						int y2 = Math.max(p1.y, p2.y);
-						final Complex o = viewToModel(x1, y1);
-						final Complex s = viewToModel(x2, y2);
+						final Complex o = mbImage.viewToModel(x1, y1, getWidth(), getHeight());
+						final Complex s = mbImage.viewToModel(x2, y2, getWidth(), getHeight());
 						s.sub(o);
 						System.out.println("o=" + o);
 						System.out.println("s=" + s);
 						mbImage.origin = o;
 						mbImage.size = s;
+						firePropertyChange(POSITION, null, Math.random());
 						recalc();
 					}
 					p1 = null;
@@ -55,18 +54,29 @@ public class MBJComponent extends JComponent {
 			}
 		});
 		addMouseMotionListener(new MouseAdapter() {
+
 			@Override
 			public void mouseMoved(final MouseEvent e) {
 				final Point p = e.getPoint();
-				//setTitle(xyToC(p.x, p.y).toString());
-				firePropertyChange("title", null, viewToModel(p.x, p.y).toString());
+				final Complex jp = mbImage.viewToModel(p.x, p.y, getWidth(), getHeight());
+				final MBImage julia = new MBImage(mbImage);
+				julia.centre();
+				final BufferedImage image = (BufferedImage) createImage(TILEWIDTH, TILEHEIGHT);
+				MBJFrame.instance.queue.add(new Runnable() {
+					@Override
+					public void run() {
+						// no field accesses
+						julia.calc(image.getRaster(), 0, 0, TILEWIDTH, TILEHEIGHT, jp);
+						images[0][0] = image;
+						repaint();
+					}
+				});
 			}
 			
 			@Override
 			public void mouseDragged(final MouseEvent e) {
 				if (p1 != null) {
 					final Point p = e.getPoint();
-					firePropertyChange("title", null, viewToModel(p1.x, p1.y) + ", " + viewToModel(p.x, p.y));
 					p2 = p;
 				}
 				repaint();
@@ -91,27 +101,7 @@ public class MBJComponent extends JComponent {
 		repaint();
 	}
 	
-	private void popup (MouseEvent e) {
-		System.out.println("popup");
-//		JPopupMenu menu = new JPopupMenu();
-//		JMenuItem resetItem = new JMenuItem("Reset");
-//		resetItem.addActionListener(new ActionListener() {
-//			@Override
-//			public void actionPerformed (ActionEvent e) {
-//				reset();
-//			}
-//		});
-//		menu.add(resetItem);
-//		menu.show(this, e.getX(), e.getY());
-	}
 	
-	private Complex viewToModel(final int x, final int y) {
-		final Complex c = new Complex(mbImage.size);
-		c.rmul(x, y);
-		c.rdiv(getWidth(), getHeight());
-		c.add(mbImage.origin);
-		return c;
-	}
 	
 	@Override
 	public void paintComponent(final Graphics g) {
@@ -158,9 +148,10 @@ public class MBJComponent extends JComponent {
 		final List<Runnable> l = new ArrayList<>();
 		
 		for (int ix = 0; ix < images.length; ix++) {
+			final int fix = ix;
 			for (int iy = 0; iy < images[ix].length; iy++) {
+				final int fiy = iy;
 				final int xo = ix * TILEWIDTH, yo = iy * TILEHEIGHT;
-				final int fix = ix, fiy = iy;
 				final int iw = Math.min(TILEWIDTH, w - xo);
 				final int ih = Math.min(TILEHEIGHT, h - yo);
 				final BufferedImage image = (BufferedImage) createImage(iw, ih);
@@ -169,7 +160,7 @@ public class MBJComponent extends JComponent {
 					@Override
 					public void run() {
 						// no field accesses
-						mbImage.calc(image, xo, yo, w, h);
+						mbImage.calc(image.getRaster(), xo, yo, w, h, null);
 						images[fix][fiy] = image;
 						repaint();
 					}

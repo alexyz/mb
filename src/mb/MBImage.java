@@ -33,27 +33,39 @@ public class MBImage {
 		size = new Complex(4, 3);
 	}
 	
-	public void calc (final BufferedImage image, final int xo, final int yo, final int w, final int h) {
+	public Complex viewToModel(final int x, final int y, final int w, final int h) {
+		return viewToModel(new Complex(), x, y, w, h);
+	}
+	
+	public Complex viewToModel(Complex c, final int x, final int y, final int w, final int h) {
+		// c = (size / [w,h]) * [x,y]
+		c.set(size);
+		c.mulr(x, y);
+		c.divr(w, h);
+		c.add(origin);
+		return c;
+	}
+	
+	public void calc (final WritableRaster r, final int xo, final int yo, final int w, final int h, final Complex z0) {
 		final Complex z = new Complex();
 		final Complex c = new Complex();
-		final int iw = image.getWidth();
-		final int ih = image.getHeight();
+		final int iw = r.getWidth();
+		final int ih = r.getHeight();
 		final int[] a = new int[3];
-		final WritableRaster r = image.getRaster();
 		
 		for (int y = 0; y < ih; y++) {
 			for (int x = 0; x < iw; x++) {
-				c.set(size);
-				c.rmul(xo + x, yo + y);
-				c.rdiv(w, h);
-				c.add(origin);
-				// z[0]
+//				c.set(size);
+//				c.mulr(xo + x, yo + y);
+//				c.divr(w, h);
+//				c.add(origin);
+				viewToModel(c, xo + x, yo + y, w, h);
+				// z[0] = c
 				z.set(c);
-				int i = mbIteration.iterate(z, c, iterationDepth, bound);
+				int i = mbIteration.iterate(z, z0 != null ? z0 : c, iterationDepth, bound);
 				if (iterationDepth != 255) {
 					i = (i * 255) / iterationDepth;
 				}
-				// image.setRGB(x, y, i | i << 8 | i << 16);
 				a[0] = i;
 				a[1] = i;
 				a[2] = i;

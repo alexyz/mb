@@ -35,7 +35,7 @@ final class Complex {
 		im = im2;
 	}
 	
-	public final void rmul (final double x, final double y) {
+	public final void mulr (final double x, final double y) {
 		re *= x;
 		im *= y;
 	}
@@ -46,7 +46,7 @@ final class Complex {
 	
 	public final void pow (final double n) {
 		log();
-		rmul(n);
+		mulr(n);
 		exp();
 	}
 	
@@ -106,7 +106,7 @@ final class Complex {
 		im = im3;
 	}
 	
-	public final void rmul (final double s) {
+	public final void mulr (final double s) {
 		re *= s;
 		im *= s;
 	}
@@ -123,7 +123,7 @@ final class Complex {
 		im = im3 / abssq2;
 	}
 	
-	public final void rdiv (final double x, final double y) {
+	public final void divr (final double x, final double y) {
 		re /= x;
 		im /= y;
 	}
