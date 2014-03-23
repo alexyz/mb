@@ -4,6 +4,11 @@ package mb;
  * it's a complex number type
  */
 final class Complex {
+	
+	public static Complex copy (Complex c) {
+		return c != null ? new Complex(c) : null;
+	}
+	
 	public double re, im;
 	
 	public Complex (final double r, final double i) {

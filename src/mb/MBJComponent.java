@@ -11,45 +11,62 @@ import javax.swing.JComponent;
 public class MBJComponent extends JComponent {
 	
 	public static final String POSITION = "position";
-	private static int TILEWIDTH = 75;
-	private static int TILEHEIGHT = 75;
 	
-	private final MBImage mbImage;
+	private static final int TILEWIDTH = 75;
+	private static final int TILEHEIGHT = 75;
+	
+	private MBImage mbImage;
+	private MBImage juliaImage;
 	private Point p1, p2;
 	private Image[][] images;
-	private Complex jp;
+	private boolean selectJulia;
 	
 	public MBJComponent() {
 		mbImage = new MBImage();
 		addMouseListener(new MouseAdapter() {
 			@Override
 			public void mousePressed(final MouseEvent e) {
-				if (e.getButton() == MouseEvent.BUTTON1) {
-					p1 = e.getPoint();
+				if (!selectJulia) {
+					if (e.getButton() == MouseEvent.BUTTON1) {
+						p1 = e.getPoint();
+					}
+				}
+			}
+			
+			@Override
+			public void mouseClicked (MouseEvent e) {
+				if (selectJulia) {
+					mbImage = juliaImage;
+					selectJulia = false;
+					setCursor(Cursor.getDefaultCursor());
+					firePropertyChange(POSITION, null, Math.random());
+					recalc();
 				}
 			}
 			
 			@Override
 			public void mouseReleased(final MouseEvent e) {
-				if (e.getButton() == MouseEvent.BUTTON1) {
-					if (p1 != null && p2 != null) {
-						int x1 = Math.min(p1.x, p2.x);
-						int y1 = Math.min(p1.y, p2.y);
-						int x2 = Math.max(p1.x, p2.x);
-						int y2 = Math.max(p1.y, p2.y);
-						final Complex o = mbImage.viewToModel(x1, y1, getWidth(), getHeight());
-						final Complex s = mbImage.viewToModel(x2, y2, getWidth(), getHeight());
-						s.sub(o);
-						System.out.println("o=" + o);
-						System.out.println("s=" + s);
-						mbImage.origin = o;
-						mbImage.size = s;
-						firePropertyChange(POSITION, null, Math.random());
-						recalc();
+				if (!selectJulia) {
+					if (e.getButton() == MouseEvent.BUTTON1) {
+						if (p1 != null && p2 != null) {
+							int x1 = Math.min(p1.x, p2.x);
+							int y1 = Math.min(p1.y, p2.y);
+							int x2 = Math.max(p1.x, p2.x);
+							int y2 = Math.max(p1.y, p2.y);
+							final Complex o = mbImage.viewToModel(x1, y1, getWidth(), getHeight());
+							final Complex s = mbImage.viewToModel(x2, y2, getWidth(), getHeight());
+							s.sub(o);
+							System.out.println("o=" + o);
+							System.out.println("s=" + s);
+							mbImage.topLeft = o;
+							mbImage.size = s;
+							firePropertyChange(POSITION, null, Math.random());
+							recalc();
+						}
+						p1 = null;
+						p2 = null;
+						repaint();
 					}
-					p1 = null;
-					p2 = null;
-					repaint();
 				}
 			}
 		});
@@ -57,20 +74,22 @@ public class MBJComponent extends JComponent {
 
 			@Override
 			public void mouseMoved(final MouseEvent e) {
-				final Point p = e.getPoint();
-				final Complex jp = mbImage.viewToModel(p.x, p.y, getWidth(), getHeight());
-				final MBImage julia = new MBImage(mbImage);
-				julia.centre();
-				final BufferedImage image = (BufferedImage) createImage(TILEWIDTH, TILEHEIGHT);
-				MBJFrame.instance.queue.add(new Runnable() {
-					@Override
-					public void run() {
-						// no field accesses
-						julia.calc(image.getRaster(), 0, 0, TILEWIDTH, TILEHEIGHT, jp);
-						images[0][0] = image;
-						repaint();
-					}
-				});
+				if (selectJulia) {
+					final Point p = e.getPoint();
+					juliaImage = new MBImage(mbImage);
+					juliaImage.julia = mbImage.viewToModel(p.x, p.y, getWidth(), getHeight());
+					juliaImage.centre();
+					final BufferedImage image = (BufferedImage) createImage(TILEWIDTH, TILEHEIGHT);
+					MBJFrame.instance.queue.add(new Runnable() {
+						@Override
+						public void run() {
+							// XXX might not be thread safe
+							juliaImage.calc(image.getRaster(), 0, 0, TILEWIDTH, TILEHEIGHT);
+							images[0][0] = image;
+							repaint();
+						}
+					});
+				}
 			}
 			
 			@Override
@@ -90,18 +109,11 @@ public class MBJComponent extends JComponent {
 		});
 	}
 	
-	void recentre() {
-		System.out.println("recentre");
-		mbImage.centre();
-	}
-	
-	void reimage() {
+	public void reimage() {
 		System.out.println("reimage");
 		images = null;
 		repaint();
 	}
-	
-	
 	
 	@Override
 	public void paintComponent(final Graphics g) {
@@ -155,12 +167,12 @@ public class MBJComponent extends JComponent {
 				final int iw = Math.min(TILEWIDTH, w - xo);
 				final int ih = Math.min(TILEHEIGHT, h - yo);
 				final BufferedImage image = (BufferedImage) createImage(iw, ih);
+				final MBImage mbImage = new MBImage(this.mbImage);
 				
 				l.add(new Runnable() {
 					@Override
 					public void run() {
-						// no field accesses
-						mbImage.calc(image.getRaster(), xo, yo, w, h, null);
+						mbImage.calc(image.getRaster(), xo, yo, w, h);
 						images[fix][fiy] = image;
 						repaint();
 					}
@@ -174,6 +186,20 @@ public class MBJComponent extends JComponent {
 	
 	public MBImage getMbImage () {
 		return mbImage;
+	}
+
+	public void setJulia (boolean julia) {
+		if (julia) {
+			setCursor(new Cursor(Cursor.CROSSHAIR_CURSOR));
+			selectJulia = true;
+			mbImage.julia = null;
+			
+		} else {
+			setCursor(Cursor.getDefaultCursor());
+			selectJulia = false;
+			mbImage.julia = null;
+			recalc();
+		}
 	}
 	
 }

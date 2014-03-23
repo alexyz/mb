@@ -1,15 +1,15 @@
 package mb;
 
-import java.awt.image.BufferedImage;
 import java.awt.image.WritableRaster;
 
 public class MBImage {
 	
-	public Complex origin;
+	public Complex topLeft;
 	public Complex size;
 	public int iterationDepth;
 	public double bound;
 	public MBIteration mbIteration;
+	public Complex julia;
 	
 	public MBImage () {
 		mbIteration = MBIteration.SQUARE_ADD_C;
@@ -24,12 +24,17 @@ public class MBImage {
 		bound = other.bound;
 		iterationDepth = other.iterationDepth;
 		mbIteration = other.mbIteration;
-		origin = new Complex(other.origin);
-		size = new Complex(other.size);
+		topLeft = Complex.copy(other.topLeft);
+		size = Complex.copy(other.size);
+		julia = Complex.copy(other.julia);
 	}
 	
 	public void centre () {
-		origin = new Complex(-3, -1.5);
+		if (julia != null) {
+			topLeft = new Complex(-2, -1.5);
+		} else {
+			topLeft = new Complex(-3, -1.5);
+		}
 		size = new Complex(4, 3);
 	}
 	
@@ -42,11 +47,11 @@ public class MBImage {
 		c.set(size);
 		c.mulr(x, y);
 		c.divr(w, h);
-		c.add(origin);
+		c.add(topLeft);
 		return c;
 	}
 	
-	public void calc (final WritableRaster r, final int xo, final int yo, final int w, final int h, final Complex z0) {
+	public void calc (final WritableRaster r, final int xo, final int yo, final int w, final int h) {
 		final Complex z = new Complex();
 		final Complex c = new Complex();
 		final int iw = r.getWidth();
@@ -62,7 +67,7 @@ public class MBImage {
 				viewToModel(c, xo + x, yo + y, w, h);
 				// z[0] = c
 				z.set(c);
-				int i = mbIteration.iterate(z, z0 != null ? z0 : c, iterationDepth, bound);
+				int i = mbIteration.iterate(z, julia != null ? julia : c, iterationDepth, bound);
 				if (iterationDepth != 255) {
 					i = (i * 255) / iterationDepth;
 				}

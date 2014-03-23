@@ -1,14 +1,11 @@
 package mb;
 
 import java.awt.BorderLayout;
-import java.awt.DisplayMode;
-import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.beans.*;
 import java.io.File;
-import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.concurrent.*;
@@ -82,7 +79,7 @@ public class MBJFrame extends JFrame {
 		centreButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed (ActionEvent e) {
-				mbComp.recentre();
+				mbComp.getMbImage().centre();
 				mbComp.reimage();
 			}
 		});
@@ -113,6 +110,15 @@ public class MBJFrame extends JFrame {
 			}
 		});
 		
+		JToggleButton juliaButton = new JToggleButton("Julia");
+		juliaButton.setMargin(new Insets(0,0,0,0));
+		juliaButton.addItemListener(new ItemListener() {
+			@Override
+			public void itemStateChanged (ItemEvent e) {
+				mbComp.setJulia(e.getStateChange() == ItemEvent.SELECTED);
+			}
+		});
+		
 		JPanel buttonPanel = new JPanel();
 		buttonPanel.add(new JLabel("Function"));
 		buttonPanel.add(functionCombo);
@@ -123,6 +129,7 @@ public class MBJFrame extends JFrame {
 		buttonPanel.add(new JLabel("Bound"));
 		buttonPanel.add(boundSpinner);
 		buttonPanel.add(centreButton);
+		buttonPanel.add(juliaButton);
 		buttonPanel.add(exportButton);
 		
 		JPanel contentPanel = new JPanel(new BorderLayout());
@@ -148,11 +155,14 @@ public class MBJFrame extends JFrame {
 	
 	private void updateTitle () {
 		MBImage i = mbComp.getMbImage();
-		Complex o = new Complex(i.origin);
+		Complex o = new Complex(i.topLeft);
 		Complex s = new Complex(i.size);
 		s.div(2, 0);
 		o.add(s);
 		String p = o + ", " + i.size;
+		if (i.julia != null) {
+			p += ", " + i.julia;
+		}
 		setTitle(String.format("MBEx [%s] [%d]", p, queue.size() + running.get()));
 	}
 	
@@ -163,7 +173,7 @@ public class MBJFrame extends JFrame {
 		MBImage mbImage = new MBImage(mbComp.getMbImage());
 		mbImage.bound = 16;
 		mbImage.iterationDepth = 255;
-		mbImage.calc(image.getRaster(), 0, 0, w, h, null);
+		mbImage.calc(image.getRaster(), 0, 0, w, h);
 		return image;
 	}
 	
