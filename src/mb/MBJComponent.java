@@ -125,6 +125,7 @@ public class MBJComponent extends JComponent {
 			return;
 		}
 		
+		boolean bl = false;
 		for (int n = 0; n < images.length; n++) {
 			for (int m = 0; m < images[n].length; m++) {
 				final Image im = images[n][m];
@@ -134,8 +135,15 @@ public class MBJComponent extends JComponent {
 				} else {
 					g.setColor(Color.black);
 					g.fillRect(x, y, TILEWIDTH, TILEHEIGHT);
+					bl = true;
 				}
 			}
+		}
+		
+		if (t != 0 && !bl) {
+			long t2 = System.nanoTime() - t;
+			System.out.println("time: " + (t2 / 1000000000.0) + " s");
+			t = 0;
 		}
 		
 		if (p1 != null && p2 != null) {
@@ -148,9 +156,12 @@ public class MBJComponent extends JComponent {
 		}
 	}
 	
+	private long t;
+	
 	private void recalc() {
 		System.out.println("recalc");
 		MBJFrame.instance.queue.clear();
+		t = System.nanoTime();
 		
 		final int w = getWidth(), h = getHeight();
 		final int xi = (w + TILEWIDTH - 1) / TILEWIDTH;

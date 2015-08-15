@@ -148,7 +148,7 @@ public class MBJFrame extends JFrame {
 		
 		final int procs = Runtime.getRuntime().availableProcessors();
 		System.out.println("procs: " + procs);
-		for (int n = 0; n < procs; n++) {
+		for (int n = 0; n < Math.max(1, procs - 1); n++) {
 			new WorkerThread(n).start();
 		}
 	}
