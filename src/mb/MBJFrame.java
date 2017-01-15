@@ -27,107 +27,65 @@ public class MBJFrame extends JFrame {
 	}
 	
 	public final BlockingQueue<Runnable> queue = new LinkedBlockingQueue<>();
-	private final MBJComponent mbComp;
+	
+	private final MBJComponent mbComp = new MBJComponent();
 	private final AtomicInteger running = new AtomicInteger();
+	private final JComboBox<MBFunction> functionCombo = new JComboBox<>(new DefaultComboBoxModel<>(MBFunction.all()));
+	private final JSpinner powerReSpinner = new JSpinner(new SpinnerNumberModel(2, -10, 10, 0.001));
+	private final JSpinner powerImSpinner = new JSpinner(new SpinnerNumberModel(0, -10, 10, 0.001));
+//	private final JSpinner depthSpinner = new JSpinner(new SpinnerNumberModel(255, 10, 1000000, 1));
+	private final JComboBox<Integer> depthCombo = new JComboBox(new Integer[] { 16, 255, 1000, 5000, 25000, 100000, 250000, 1000000 });
+	private final JSpinner boundSpinner = new JSpinner(new SpinnerNumberModel(2, 0.1, 100, 0.1));
+	private final JButton centreButton = new JButton("Centre");
+	private final JButton exportButton = new JButton("Export");
+	private final JToggleButton juliaButton = new JToggleButton("Julia");
 	
 	public MBJFrame () {
-		mbComp = new MBJComponent();
 		
-		final JComboBox<MBIteration> functionCombo = new JComboBox<>(new DefaultComboBoxModel<>(MBIteration.all()));
-		functionCombo.addItemListener(new ItemListener() {
-			@Override
-			public void itemStateChanged (ItemEvent e) {
-				mbComp.getMbImage().mbIteration = (MBIteration) e.getItem();
-				mbComp.reimage();
-			}
-		});
+		functionCombo.addItemListener(e -> functionChanged(e));
 		
-//		final JSpinner powerSpinner = new JSpinner(new SpinnerNumberModel(2.0, 1.01, 4.00, 0.001));
-//		powerSpinner.addChangeListener(new ChangeListener() {
-//			@Override
-//			public void stateChanged (ChangeEvent e) {
-//				double v = (Double) powerSpinner.getValue();
-//				v = Math.round(v * 1000) / 1000.0;
-//				powerSpinner.setValue(v);
-//				mbComp.getMbImage().mbIteration = MBIteration.getMBIteration(v);
-//				mbComp.reimage();
-//			}
-//		});
+		mbComp.image.function = (MBFunction) functionCombo.getModel().getSelectedItem();
+		mbComp.image.params = new MBFunctionParams();
 		
-		final JSpinner itSpinner = new JSpinner(new SpinnerNumberModel(mbComp.getMbImage().iterationDepth, 31, 255, 32));
-		itSpinner.addChangeListener(new ChangeListener() {
-			@Override
-			public void stateChanged (ChangeEvent e) {
-				mbComp.getMbImage().iterationDepth = (Integer) itSpinner.getValue();
-				mbComp.reimage();
-			}
-		});
+		depthCombo.setSelectedIndex(1);
+		depthCombo.addItemListener(e -> depthChanged());
+		mbComp.image.params.depth = ((Number) depthCombo.getSelectedItem()).intValue();
 		
-		final JSpinner boundSpinner = new JSpinner(new SpinnerNumberModel(mbComp.getMbImage().bound, 0.5, 16, 0.1));
-		boundSpinner.addChangeListener(new ChangeListener() {
-			@Override
-			public void stateChanged (ChangeEvent e) {
-				double v = (Double) boundSpinner.getValue();
-				v = Math.round(v * 10) / 10.0;
-				mbComp.getMbImage().bound = (Double) boundSpinner.getValue();
-				mbComp.reimage();
-			}
-		});
+//		depthSpinner.addChangeListener(e -> depthChanged());
+//		mbComp.image.params.iterationDepth = ((Number) depthSpinner.getValue()).intValue();
 		
-		final JButton centreButton = new JButton("Centre");
+		boundSpinner.addChangeListener(e -> boundChanged());
+		mbComp.image.params.bound = ((Number)boundSpinner.getValue()).doubleValue();
+
+		powerReSpinner.addChangeListener(e -> powerChanged());
+		powerReSpinner.setEnabled(mbComp.image.function.usesPower());
+		
+		powerImSpinner.addChangeListener(e -> powerChanged());
+		powerImSpinner.setEnabled(mbComp.image.function.usesPower());
+		
+		double re = ((Number)powerReSpinner.getValue()).doubleValue();
+		double im = ((Number)powerImSpinner.getValue()).doubleValue();
+		mbComp.image.params.power = new Complex(re, im);
+		
 		centreButton.setMargin(new Insets(0,0,0,0));
-		centreButton.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed (ActionEvent e) {
-				mbComp.getMbImage().centre();
-				mbComp.reimage();
-			}
-		});
+		centreButton.addActionListener(e -> centre());
 		
-		final JButton exportButton = new JButton("Export");
 		exportButton.setMargin(new Insets(0,0,0,0));
-		exportButton.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed (ActionEvent ae) {
-				queue.add(new Runnable() {
-					@Override
-					public void run () {
-						long t = System.nanoTime();
-						BufferedImage image = export();
-						t = System.nanoTime() - t;
-						System.out.println("export time: " + (t / 1000000.0) + " ms");
-						String date = new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date());
-						File f = new File("mbimage." + date + ".png");
-						try {
-							ImageIO.write(image, "png", f);
-							System.out.println("wrote " + f);
-						} catch (Exception e) {
-							JOptionPane.showMessageDialog(MBJFrame.this, "could not write " + f + ":\n" + e.toString());
-						}
-					}
-				});
-				updateTitle();
-			}
-		});
+		exportButton.addActionListener(ae -> exportPressed());
 		
-		JToggleButton juliaButton = new JToggleButton("Julia");
 		juliaButton.setMargin(new Insets(0,0,0,0));
-		juliaButton.addItemListener(new ItemListener() {
-			@Override
-			public void itemStateChanged (ItemEvent e) {
-				mbComp.setJulia(e.getStateChange() == ItemEvent.SELECTED);
-			}
-		});
+		juliaButton.addItemListener(e -> juliaToggled(e));
 		
 		JPanel buttonPanel = new JPanel();
-		buttonPanel.add(new JLabel("Function"));
 		buttonPanel.add(functionCombo);
-//		buttonPanel.add(new JLabel("Power"));
-//		buttonPanel.add(powerSpinner);
 		buttonPanel.add(new JLabel("Depth"));
-		buttonPanel.add(itSpinner);
+//		buttonPanel.add(depthSpinner);
+		buttonPanel.add(depthCombo);
 		buttonPanel.add(new JLabel("Bound"));
 		buttonPanel.add(boundSpinner);
+		buttonPanel.add(new JLabel("Power"));
+		buttonPanel.add(powerReSpinner);
+		buttonPanel.add(powerImSpinner);
 		buttonPanel.add(centreButton);
 		buttonPanel.add(juliaButton);
 		buttonPanel.add(exportButton);
@@ -137,12 +95,7 @@ public class MBJFrame extends JFrame {
 		contentPanel.add(mbComp, BorderLayout.CENTER);
 		getContentPane().add(contentPanel);
 		
-		mbComp.addPropertyChangeListener(MBJComponent.POSITION, new PropertyChangeListener() {
-			@Override
-			public void propertyChange (PropertyChangeEvent arg0) {
-				updateTitle();
-			}
-		});
+		mbComp.addPropertyChangeListener(MBJComponent.POSITION, e -> updateTitle());
 		
 		updateTitle();
 		
@@ -152,27 +105,84 @@ public class MBJFrame extends JFrame {
 			new WorkerThread(n).start();
 		}
 	}
+
+	private void functionChanged (ItemEvent e) {
+		MBFunction i = (MBFunction) e.getItem();
+		powerReSpinner.setEnabled(i.usesPower());
+		powerImSpinner.setEnabled(i.usesPower());
+		mbComp.image.function = i;
+		mbComp.refresh();
+	}
+
+	private void juliaToggled (ItemEvent e) {
+		mbComp.setJulia(e.getStateChange() == ItemEvent.SELECTED);
+	}
+
+	private void exportPressed () {
+		queue.add(new Runnable() {
+			@Override
+			public void run () {
+				long t = System.nanoTime();
+				BufferedImage image = export();
+				t = System.nanoTime() - t;
+				System.out.println("export time: " + (t / 1000000.0) + " ms");
+				String date = new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date());
+				File f = new File("mbimage." + date + ".png");
+				try {
+					ImageIO.write(image, "png", f);
+					System.out.println("wrote " + f);
+				} catch (Exception e) {
+					JOptionPane.showMessageDialog(MBJFrame.this, "could not write " + f + ":\n" + e.toString());
+				}
+			}
+		});
+		updateTitle();
+	}
+
+	private void centre () {
+		mbComp.image.centre();
+		mbComp.refresh();
+	}
+
+	private void powerChanged () {
+		double re = ((Number)powerReSpinner.getValue()).doubleValue();
+		re = Math.round(re * 1000) / 1000.0;
+		powerReSpinner.setValue(re);
+		double im = ((Number)powerImSpinner.getValue()).doubleValue();
+		im = Math.round(im * 1000) / 1000.0;
+		powerImSpinner.setValue(im);
+		mbComp.image.params.power = new Complex(re, im);
+		mbComp.refresh();
+	}
+
+	private void depthChanged () {
+		//mbComp.image.params.depth = (Integer) depthSpinner.getValue();
+		mbComp.image.params.depth = ((Number) depthCombo.getSelectedItem()).intValue();
+		mbComp.refresh();
+	}
+
+	private void boundChanged () {
+		double v = ((Number) boundSpinner.getValue()).doubleValue();
+		v = Math.round(v * 10) / 10.0;
+		boundSpinner.setValue(v);
+		mbComp.image.params.bound = v;
+		mbComp.refresh();
+	}
 	
 	private void updateTitle () {
-		MBImage i = mbComp.getMbImage();
-		Complex o = new Complex(i.topLeft);
-		Complex s = new Complex(i.size);
-		s.div(2, 0);
-		o.add(s);
-		String p = o + ", " + i.size;
-		if (i.julia != null) {
-			p += ", " + i.julia;
-		}
-		setTitle(String.format("MBEx [%s] [%d]", p, queue.size() + running.get()));
+		//		MBImage i = mbComp.mbImage;
+		//		double a = i.size.re * i.size.im;
+		//		if (i.julia != null) {
+		//			p += ", " + i.julia;
+		//		}
+		setTitle(String.format("MBEx [%s] [%s]", queue.size(), running.get()));
 	}
 	
 	private BufferedImage export() {
 		int w = 1920;
 		int h = 1080;
 		BufferedImage image = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
-		MBImage mbImage = new MBImage(mbComp.getMbImage());
-		mbImage.bound = 16;
-		mbImage.iterationDepth = 255;
+		MBImage mbImage = new MBImage(mbComp.image);
 		mbImage.calc(image.getRaster(), 0, 0, w, h);
 		return image;
 	}

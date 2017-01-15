@@ -5,10 +5,6 @@ package mb;
  */
 final class Complex {
 	
-	public static Complex copy (Complex c) {
-		return c != null ? new Complex(c) : null;
-	}
-	
 	public double re, im;
 	
 	public Complex (final double r, final double i) {
@@ -40,7 +36,7 @@ final class Complex {
 		im = im2;
 	}
 	
-	public final void mulr (final double x, final double y) {
+	public final void scale (final double x, final double y) {
 		re *= x;
 		im *= y;
 	}
@@ -49,10 +45,15 @@ final class Complex {
 		im = -im;
 	}
 	
-	public final void pow (final double n) {
+	public final void pow (final double re2) {
 		log();
-		mulr(n);
+		// im2 = 0 is same as scale
+		scale(re2);
 		exp();
+	}
+	
+	public final void pow (Complex c) {
+		pow(c.re, c.im);
 	}
 	
 	public final void pow (final double re2, final double im2) {
@@ -111,7 +112,7 @@ final class Complex {
 		im = im3;
 	}
 	
-	public final void mulr (final double s) {
+	public final void scale (final double s) {
 		re *= s;
 		im *= s;
 	}
@@ -128,7 +129,7 @@ final class Complex {
 		im = im3 / abssq2;
 	}
 	
-	public final void divr (final double x, final double y) {
+	public final void unscale (final double x, final double y) {
 		re /= x;
 		im /= y;
 	}

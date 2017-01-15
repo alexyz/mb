@@ -15,14 +15,14 @@ public class MBJComponent extends JComponent {
 	private static final int TILEWIDTH = 75;
 	private static final int TILEHEIGHT = 75;
 	
-	private MBImage mbImage;
+	public MBImage image = new MBImage();
+	
 	private MBImage juliaImage;
 	private Point p1, p2;
 	private Image[][] images;
 	private boolean selectJulia;
 	
 	public MBJComponent() {
-		mbImage = new MBImage();
 		addMouseListener(new MouseAdapter() {
 			@Override
 			public void mousePressed(final MouseEvent e) {
@@ -36,7 +36,7 @@ public class MBJComponent extends JComponent {
 			@Override
 			public void mouseClicked (MouseEvent e) {
 				if (selectJulia) {
-					mbImage = juliaImage;
+					image = juliaImage;
 					selectJulia = false;
 					setCursor(Cursor.getDefaultCursor());
 					firePropertyChange(POSITION, null, Math.random());
@@ -53,13 +53,13 @@ public class MBJComponent extends JComponent {
 							int y1 = Math.min(p1.y, p2.y);
 							int x2 = Math.max(p1.x, p2.x);
 							int y2 = Math.max(p1.y, p2.y);
-							final Complex o = mbImage.viewToModel(x1, y1, getWidth(), getHeight());
-							final Complex s = mbImage.viewToModel(x2, y2, getWidth(), getHeight());
+							final Complex o = image.viewToModel(x1, y1, getWidth(), getHeight());
+							final Complex s = image.viewToModel(x2, y2, getWidth(), getHeight());
 							s.sub(o);
 							System.out.println("o=" + o);
 							System.out.println("s=" + s);
-							mbImage.topLeft = o;
-							mbImage.size = s;
+							image.topLeft = o;
+							image.size = s;
 							firePropertyChange(POSITION, null, Math.random());
 							recalc();
 						}
@@ -76,8 +76,8 @@ public class MBJComponent extends JComponent {
 			public void mouseMoved(final MouseEvent e) {
 				if (selectJulia) {
 					final Point p = e.getPoint();
-					juliaImage = new MBImage(mbImage);
-					juliaImage.julia = mbImage.viewToModel(p.x, p.y, getWidth(), getHeight());
+					juliaImage = new MBImage(image);
+					juliaImage.julia = image.viewToModel(p.x, p.y, getWidth(), getHeight());
 					juliaImage.centre();
 					final BufferedImage image = (BufferedImage) createImage(TILEWIDTH, TILEHEIGHT);
 					MBJFrame.instance.queue.add(new Runnable() {
@@ -104,13 +104,13 @@ public class MBJComponent extends JComponent {
 		addComponentListener(new ComponentAdapter() {
 			@Override
 			public void componentResized (ComponentEvent e) {
-				reimage();
+				refresh();
 			}
 		});
 	}
 	
-	public void reimage() {
-		System.out.println("reimage");
+	public void refresh() {
+		System.out.println("component reimage");
 		images = null;
 		repaint();
 	}
@@ -118,9 +118,10 @@ public class MBJComponent extends JComponent {
 	@Override
 	public void paintComponent(final Graphics g) {
 		if (images == null) {
-			g.setColor(Color.black);
-			Graphics2D g2 = (Graphics2D) g;
-			g2.fill(g.getClipBounds());
+			System.out.println("first paint");
+//			g.setColor(Color.black);
+//			Graphics2D g2 = (Graphics2D) g;
+//			g2.fill(g.getClipBounds());
 			recalc();
 			return;
 		}
@@ -159,9 +160,14 @@ public class MBJComponent extends JComponent {
 	private long t;
 	
 	private void recalc() {
-		System.out.println("recalc");
+		System.out.println("component recalc");
+		
 		MBJFrame.instance.queue.clear();
 		t = System.nanoTime();
+		if (this.image.function == null) {
+			System.out.println("no function...");
+			return;
+		}
 		
 		final int w = getWidth(), h = getHeight();
 		final int xi = (w + TILEWIDTH - 1) / TILEWIDTH;
@@ -178,7 +184,7 @@ public class MBJComponent extends JComponent {
 				final int iw = Math.min(TILEWIDTH, w - xo);
 				final int ih = Math.min(TILEHEIGHT, h - yo);
 				final BufferedImage image = (BufferedImage) createImage(iw, ih);
-				final MBImage mbImage = new MBImage(this.mbImage);
+				final MBImage mbImage = new MBImage(this.image);
 				
 				l.add(new Runnable() {
 					@Override
@@ -192,23 +198,20 @@ public class MBJComponent extends JComponent {
 		}
 		
 		Collections.shuffle(l);
+		System.out.println("adding " + l.size() + " runnables");
 		MBJFrame.instance.queue.addAll(l);
 	}
 	
-	public MBImage getMbImage () {
-		return mbImage;
-	}
-
 	public void setJulia (boolean julia) {
 		if (julia) {
 			setCursor(new Cursor(Cursor.CROSSHAIR_CURSOR));
 			selectJulia = true;
-			mbImage.julia = null;
+			image.julia = null;
 			
 		} else {
 			setCursor(Cursor.getDefaultCursor());
 			selectJulia = false;
-			mbImage.julia = null;
+			image.julia = null;
 			recalc();
 		}
 	}

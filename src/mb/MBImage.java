@@ -6,27 +6,20 @@ public class MBImage {
 	
 	public Complex topLeft;
 	public Complex size;
-	public int iterationDepth;
-	public double bound;
-	public MBIteration mbIteration;
+	public MBFunctionParams params;
+	public MBFunction function;
 	public Complex julia;
 	
 	public MBImage () {
-		mbIteration = MBIteration.SQUARE_ADD_C;
-		iterationDepth = 255;
-		// 2 is max required for square+c
-		// other pow might need more
-		bound = 4;
 		centre();
 	}
 	
 	public MBImage (MBImage other) {
-		bound = other.bound;
-		iterationDepth = other.iterationDepth;
-		mbIteration = other.mbIteration;
-		topLeft = Complex.copy(other.topLeft);
-		size = Complex.copy(other.size);
-		julia = Complex.copy(other.julia);
+		function = other.function;
+		params = other.params.clone();
+		topLeft = new Complex(other.topLeft);
+		size = new Complex(other.size);
+		julia = other.julia != null ? new Complex(other.julia) : null;
 	}
 	
 	public void centre () {
@@ -45,8 +38,8 @@ public class MBImage {
 	public Complex viewToModel(Complex c, final int x, final int y, final int w, final int h) {
 		// c = (size / [w,h]) * [x,y]
 		c.set(size);
-		c.mulr(x, y);
-		c.divr(w, h);
+		c.scale(x, y);
+		c.unscale(w, h);
 		c.add(topLeft);
 		return c;
 	}
@@ -57,6 +50,7 @@ public class MBImage {
 		final int iw = r.getWidth();
 		final int ih = r.getHeight();
 		final int[] a = new int[3];
+		final int id = params.depth;
 		
 		for (int y = 0; y < ih; y++) {
 			for (int x = 0; x < iw; x++) {
@@ -67,9 +61,9 @@ public class MBImage {
 				viewToModel(c, xo + x, yo + y, w, h);
 				// z[0] = c
 				z.set(c);
-				int i = mbIteration.iterate(z, julia != null ? julia : c, iterationDepth, bound);
-				if (iterationDepth != 255) {
-					i = (i * 255) / iterationDepth;
+				int i = function.iterate(z, julia != null ? julia : c, params);
+				if (id != 255) {
+					i = (i * 255) / id;
 				}
 				a[0] = i;
 				a[1] = i;
