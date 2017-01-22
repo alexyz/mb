@@ -1,10 +1,11 @@
 package mb;
 
+import java.awt.Point;
 import java.awt.image.WritableRaster;
 
 public class MBImage {
 	
-	public Complex topLeft;
+	public Complex centre;
 	public Complex size;
 	public MBFunctionParams params;
 	public MBFunction function;
@@ -17,36 +18,34 @@ public class MBImage {
 	public MBImage (MBImage other) {
 		function = other.function;
 		params = other.params.clone();
-		topLeft = new Complex(other.topLeft);
+		centre = new Complex(other.centre);
 		size = new Complex(other.size);
 		julia = other.julia != null ? new Complex(other.julia) : null;
 	}
 	
 	public void centre () {
 		if (julia != null) {
-			topLeft = new Complex(-2, -1.5);
+			centre = new Complex();
+			size = new Complex(4, 3);
 		} else {
-			topLeft = new Complex(-3, -1.5);
+			centre = new Complex();
+			size = new Complex(4, 3);
 		}
-		size = new Complex(4, 3);
 	}
 	
-	public Complex viewToModel(final int x, final int y, final int w, final int h) {
-		return viewToModel(new Complex(), x, y, w, h);
+	public Complex viewToModel (final int x, final int y, final int w, final int h) {
+		return new Complex(size).sub(2*centre.re, 2*centre.im).scale(w,h).sub(2*size.re*x,2*size.im*y).unscale(2*w,2*h).neg();
 	}
 	
-	public Complex viewToModel(Complex c, final int x, final int y, final int w, final int h) {
-		// c = (size / [w,h]) * [x,y]
-		c.set(size);
-		c.scale(x, y);
-		c.unscale(w, h);
-		c.add(topLeft);
-		return c;
+	public Point modelToView (final Complex m, final int w, final int h) {
+		return modelToView(m.re, m.im, w, h);
+	}
+	
+	public Point modelToView (final double re, final double im, final int w, final int h) {
+		return new Complex(size).add(re*2,im*2).sub(centre.re*2, centre.im*2).scale(w, h).unscale(size.re*2,size.im*2).toPoint();
 	}
 	
 	public void calc (final WritableRaster r, final int xo, final int yo, final int w, final int h) {
-		final Complex z = new Complex();
-		final Complex c = new Complex();
 		final int iw = r.getWidth();
 		final int ih = r.getHeight();
 		final int[] a = new int[3];
@@ -54,13 +53,9 @@ public class MBImage {
 		
 		for (int y = 0; y < ih; y++) {
 			for (int x = 0; x < iw; x++) {
-//				c.set(size);
-//				c.mulr(xo + x, yo + y);
-//				c.divr(w, h);
-//				c.add(origin);
-				viewToModel(c, xo + x, yo + y, w, h);
+				Complex c = viewToModel(xo + x, yo + y, w, h);
 				// z[0] = c
-				z.set(c);
+				Complex z = new Complex(c);
 				int i = function.iterate(z, julia != null ? julia : c, params);
 				if (id != 255) {
 					i = (i * 255) / id;

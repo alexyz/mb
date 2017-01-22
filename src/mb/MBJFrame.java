@@ -21,8 +21,6 @@ public class MBJFrame extends JFrame {
 	
 	public static void main (final String[] args) {
 		instance.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		instance.setSize(640, 480);
-		instance.repaint();
 		instance.setVisible(true);
 	}
 	
@@ -33,12 +31,12 @@ public class MBJFrame extends JFrame {
 	private final JComboBox<MBFunction> functionCombo = new JComboBox<>(new DefaultComboBoxModel<>(MBFunction.all()));
 	private final JSpinner powerReSpinner = new JSpinner(new SpinnerNumberModel(2, -10, 10, 0.001));
 	private final JSpinner powerImSpinner = new JSpinner(new SpinnerNumberModel(0, -10, 10, 0.001));
-//	private final JSpinner depthSpinner = new JSpinner(new SpinnerNumberModel(255, 10, 1000000, 1));
 	private final JComboBox<Integer> depthCombo = new JComboBox(new Integer[] { 16, 255, 1000, 5000, 25000, 100000, 250000, 1000000 });
 	private final JSpinner boundSpinner = new JSpinner(new SpinnerNumberModel(2, 0.1, 100, 0.1));
 	private final JButton centreButton = new JButton("Centre");
 	private final JButton exportButton = new JButton("Export");
 	private final JToggleButton juliaButton = new JToggleButton("Julia");
+	private final JToggleButton gridButton = new JToggleButton("Grid");
 	
 	public MBJFrame () {
 		
@@ -50,9 +48,6 @@ public class MBJFrame extends JFrame {
 		depthCombo.setSelectedIndex(1);
 		depthCombo.addItemListener(e -> depthChanged());
 		mbComp.image.params.depth = ((Number) depthCombo.getSelectedItem()).intValue();
-		
-//		depthSpinner.addChangeListener(e -> depthChanged());
-//		mbComp.image.params.iterationDepth = ((Number) depthSpinner.getValue()).intValue();
 		
 		boundSpinner.addChangeListener(e -> boundChanged());
 		mbComp.image.params.bound = ((Number)boundSpinner.getValue()).doubleValue();
@@ -76,10 +71,12 @@ public class MBJFrame extends JFrame {
 		juliaButton.setMargin(new Insets(0,0,0,0));
 		juliaButton.addItemListener(e -> juliaToggled(e));
 		
+		gridButton.setMargin(new Insets(0,0,0,0));
+		gridButton.addItemListener(e -> gridToggled(e));
+		
 		JPanel buttonPanel = new JPanel();
 		buttonPanel.add(functionCombo);
 		buttonPanel.add(new JLabel("Depth"));
-//		buttonPanel.add(depthSpinner);
 		buttonPanel.add(depthCombo);
 		buttonPanel.add(new JLabel("Bound"));
 		buttonPanel.add(boundSpinner);
@@ -89,6 +86,7 @@ public class MBJFrame extends JFrame {
 		buttonPanel.add(centreButton);
 		buttonPanel.add(juliaButton);
 		buttonPanel.add(exportButton);
+		buttonPanel.add(gridButton);
 		
 		JPanel contentPanel = new JPanel(new BorderLayout());
 		contentPanel.add(buttonPanel, BorderLayout.NORTH);
@@ -104,6 +102,8 @@ public class MBJFrame extends JFrame {
 		for (int n = 0; n < Math.max(1, procs - 1); n++) {
 			new WorkerThread(n).start();
 		}
+		
+		pack();
 	}
 
 	private void functionChanged (ItemEvent e) {
@@ -116,6 +116,10 @@ public class MBJFrame extends JFrame {
 
 	private void juliaToggled (ItemEvent e) {
 		mbComp.setJulia(e.getStateChange() == ItemEvent.SELECTED);
+	}
+	
+	private void gridToggled (ItemEvent e) {
+		mbComp.setGrid(e.getStateChange() == ItemEvent.SELECTED);
 	}
 
 	private void exportPressed () {
@@ -156,7 +160,6 @@ public class MBJFrame extends JFrame {
 	}
 
 	private void depthChanged () {
-		//mbComp.image.params.depth = (Integer) depthSpinner.getValue();
 		mbComp.image.params.depth = ((Number) depthCombo.getSelectedItem()).intValue();
 		mbComp.refresh();
 	}
@@ -170,12 +173,7 @@ public class MBJFrame extends JFrame {
 	}
 	
 	private void updateTitle () {
-		//		MBImage i = mbComp.mbImage;
-		//		double a = i.size.re * i.size.im;
-		//		if (i.julia != null) {
-		//			p += ", " + i.julia;
-		//		}
-		setTitle(String.format("MBEx [%s] [%s]", queue.size(), running.get()));
+		setTitle(String.format("MBEx [%s, %s]", queue.size(), running.get()));
 	}
 	
 	private BufferedImage export() {

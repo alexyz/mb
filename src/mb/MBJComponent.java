@@ -21,8 +21,10 @@ public class MBJComponent extends JComponent {
 	private Point p1, p2;
 	private Image[][] images;
 	private boolean selectJulia;
+	private Point mp;
 	
 	public MBJComponent() {
+		setPreferredSize(new Dimension(640, 480));
 		addMouseListener(new MouseAdapter() {
 			@Override
 			public void mousePressed(final MouseEvent e) {
@@ -41,6 +43,16 @@ public class MBJComponent extends JComponent {
 					setCursor(Cursor.getDefaultCursor());
 					firePropertyChange(POSITION, null, Math.random());
 					recalc();
+				} else if (e.getButton() == MouseEvent.BUTTON1) {
+					System.out.println("zoom in");
+					image.centre = image.viewToModel(e.getX(), e.getY(), getWidth(), getHeight());
+					image.size.div(2);
+					recalc();
+					
+				} else if (e.getButton() == MouseEvent.BUTTON3) {
+					System.out.println("zoom out");
+					image.size.mul(2);
+					recalc();
 				}
 			}
 			
@@ -53,12 +65,12 @@ public class MBJComponent extends JComponent {
 							int y1 = Math.min(p1.y, p2.y);
 							int x2 = Math.max(p1.x, p2.x);
 							int y2 = Math.max(p1.y, p2.y);
-							final Complex o = image.viewToModel(x1, y1, getWidth(), getHeight());
-							final Complex s = image.viewToModel(x2, y2, getWidth(), getHeight());
-							s.sub(o);
-							System.out.println("o=" + o);
+							final Complex tl = image.viewToModel(x1, y1, getWidth(), getHeight());
+							final Complex s = image.viewToModel(x2, y2, getWidth(), getHeight()).sub(tl);
+							final Complex c = new Complex(tl).add(s.re/2, s.im/2);
+							System.out.println("o=" + tl);
 							System.out.println("s=" + s);
-							image.topLeft = o;
+							image.centre = c;
 							image.size = s;
 							firePropertyChange(POSITION, null, Math.random());
 							recalc();
@@ -90,6 +102,8 @@ public class MBJComponent extends JComponent {
 						}
 					});
 				}
+				mp = e.getPoint();
+				repaint();
 			}
 			
 			@Override
@@ -119,9 +133,9 @@ public class MBJComponent extends JComponent {
 	public void paintComponent(final Graphics g) {
 		if (images == null) {
 			System.out.println("first paint");
-//			g.setColor(Color.black);
-//			Graphics2D g2 = (Graphics2D) g;
-//			g2.fill(g.getClipBounds());
+			g.setColor(Color.black);
+			Graphics2D g2 = (Graphics2D) g;
+			g2.fill(g.getClipBounds());
 			recalc();
 			return;
 		}
@@ -147,6 +161,27 @@ public class MBJComponent extends JComponent {
 			t = 0;
 		}
 		
+		if (mp != null) {
+			Complex m = image.viewToModel(mp.x, mp.y, getWidth(), getHeight());
+			Point v = image.modelToView(m.re, m.im, getWidth(), getHeight());
+			g.setColor(Color.blue);
+			g.drawString("m=" + m, 10, 10);
+		}
+		
+		if (grid) {
+			Complex tl = new Complex(image.centre).sub(image.size.re/2,image.size.im/2);
+			Complex br = new Complex(image.centre).add(image.size.re/2,image.size.im/2);
+			g.setColor(Color.blue);
+			for (double re = Math.floor(tl.re); re <= Math.ceil(br.re); re++) {
+				for (double im = Math.floor(tl.im); im <= Math.ceil(br.im); im++) {
+					Point p = image.modelToView(re, im, getWidth(), getHeight());
+					g.drawLine(0, p.y, getWidth(), p.y);
+					g.drawLine(p.x, 0, p.x, getHeight());
+					g.drawString("" + new Complex(re, im), p.x, p.y);
+				}
+			}
+		}
+		
 		if (p1 != null && p2 != null) {
 			g.setColor(Color.green);
 			int x = Math.min(p1.x, p2.x);
@@ -158,6 +193,8 @@ public class MBJComponent extends JComponent {
 	}
 	
 	private long t;
+
+	private boolean grid;
 	
 	private void recalc() {
 		System.out.println("component recalc");
@@ -214,6 +251,11 @@ public class MBJComponent extends JComponent {
 			image.julia = null;
 			recalc();
 		}
+	}
+
+	public void setGrid (boolean grid) {
+		this.grid = grid;
+		repaint();
 	}
 	
 }

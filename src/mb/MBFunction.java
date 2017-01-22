@@ -38,46 +38,6 @@ public abstract class MBFunction {
 		}
 	};
 	
-//	public static final MBFunction POW_2P01_ADD_C = new MBFunction() {
-//		@Override
-//		public final int iterate (final Complex z, final Complex c, MBFunctionParams p) {
-//			final double boundSq = Math.pow(p.bound, 2);
-//			for (int i = 0; i < p.iterationDepth; i++) {
-//				z.pow(2, 0.1);
-//				z.add(c);
-//				if (z.getAbsSq() > boundSq) {
-//					return i;
-//				}
-//			}
-//			return p.iterationDepth;
-//		}
-//		
-//		@Override
-//		public String toString () {
-//			return "z^(2+0.1i)+c";
-//		}
-//	};
-//	
-//	public static final MBFunction POW_201_ADD_C = new MBFunction() {
-//		@Override
-//		public final int iterate (final Complex z, final Complex c, MBFunctionParams p) {
-//			final double boundSq = Math.pow(p.bound, 2);
-//			for (int i = 0; i < p.iterationDepth; i++) {
-//				z.pow(2.01);
-//				z.add(c);
-//				if (z.getAbsSq() > boundSq) {
-//					return i;
-//				}
-//			}
-//			return p.iterationDepth;
-//		}
-//		
-//		@Override
-//		public String toString () {
-//			return "z^2.01+c";
-//		}
-//	};
-	
 	public static final MBFunction POW_2I_ADD_C = new MBFunction() {
 		@Override
 		public final int iterate (final Complex z, final Complex c, MBFunctionParams p) {
@@ -138,26 +98,6 @@ public abstract class MBFunction {
 		}
 	};
 	
-	public static final MBFunction POW_301_ADD_C = new MBFunction() {
-		@Override
-		public final int iterate (final Complex z, final Complex c, MBFunctionParams p) {
-			final double boundSq = Math.pow(p.bound, 2);
-			for (int i = 0; i < p.depth; i++) {
-				z.pow(3.01);
-				z.add(c);
-				if (z.getAbsSq() > boundSq) {
-					return i;
-				}
-			}
-			return p.depth;
-		}
-		
-		@Override
-		public String toString () {
-			return "z^3.01+c";
-		}
-	};
-	
 	public static final MBFunction QUAD_ADD_C = new MBFunction() {
 		@Override
 		public final int iterate (final Complex z, final Complex c, MBFunctionParams p) {
@@ -178,6 +118,7 @@ public abstract class MBFunction {
 			return "z^4+c";
 		}
 	};
+	
 	public static final MBFunction SQUARE_SIN_ADD_C = new MBFunction() {
 		@Override
 		public final int iterate (final Complex z, final Complex c, MBFunctionParams p) {
@@ -196,6 +137,48 @@ public abstract class MBFunction {
 		@Override
 		public String toString () {
 			return "sin(z^2)+c";
+		}
+	};
+	
+	public static final MBFunction SQUARE_COS_ADD_C = new MBFunction() {
+		@Override
+		public final int iterate (final Complex z, final Complex c, MBFunctionParams p) {
+			final double boundSq = Math.pow(p.bound, 2);
+			for (int i = 0; i < p.depth; i++) {
+				z.sq();
+				z.cos();
+				z.add(c);
+				if (z.getAbsSq() > boundSq) {
+					return i;
+				}
+			}
+			return p.depth;
+		}
+		
+		@Override
+		public String toString () {
+			return "cos(z^2)+c";
+		}
+	};
+	
+	public static final MBFunction COS_SQUARE_ADD_C = new MBFunction() {
+		@Override
+		public final int iterate (final Complex z, final Complex c, MBFunctionParams p) {
+			final double boundSq = Math.pow(p.bound, 2);
+			for (int i = 0; i < p.depth; i++) {
+				z.cos();
+				z.sq();
+				z.add(c);
+				if (z.getAbsSq() > boundSq) {
+					return i;
+				}
+			}
+			return p.depth;
+		}
+		
+		@Override
+		public String toString () {
+			return "cos(z)^2+c";
 		}
 	};
 	
@@ -285,6 +268,66 @@ public abstract class MBFunction {
 		}
 	};
 	
+	public static final MBFunction EXP_SQ = new MBFunction() {
+		@Override
+		public final int iterate (final Complex z, final Complex c, MBFunctionParams p) {
+			final double boundSq = Math.pow(p.bound, 2);
+			for (int i = 0; i < p.depth; i++) {
+				z.exp();
+				z.sq();
+				z.add(c);
+				if (z.getAbsSq() > boundSq) {
+					return i;
+				}
+			}
+			return p.depth;
+		}
+		
+		@Override
+		public String toString () {
+			return "exp(z)^2+c";
+		}
+	};
+	public static final MBFunction SQ_EXP = new MBFunction() {
+		@Override
+		public final int iterate (final Complex z, final Complex c, MBFunctionParams p) {
+			final double boundSq = Math.pow(p.bound, 2);
+			for (int i = 0; i < p.depth; i++) {
+				z.sq();
+				z.exp();
+				z.add(c);
+				if (z.getAbsSq() > boundSq) {
+					return i;
+				}
+			}
+			return p.depth;
+		}
+		
+		@Override
+		public String toString () {
+			return "exp(z^2)+c";
+		}
+	};
+	public static final MBFunction CU_EXP = new MBFunction() {
+		@Override
+		public final int iterate (final Complex z, final Complex c, MBFunctionParams p) {
+			final double boundSq = Math.pow(p.bound, 2);
+			for (int i = 0; i < p.depth; i++) {
+				z.cu();
+				z.exp();
+				z.add(c);
+				if (z.getAbsSq() > boundSq) {
+					return i;
+				}
+			}
+			return p.depth;
+		}
+		
+		@Override
+		public String toString () {
+			return "exp(z^4)+c";
+		}
+	};
 	public static final MBFunction[] all () {
 		try {
 			Field[] f = MBFunction.class.getFields();
