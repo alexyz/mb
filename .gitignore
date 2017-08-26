@@ -3,3 +3,4 @@ bin
 *.png
 .settings
 target
+.DS_Store

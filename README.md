@@ -8,9 +8,9 @@ Originally written around July 2012 (though the idea dates back to around 1998)
 Screenshot
 ----------
 
-![Screenshot](https://dl.dropboxusercontent.com/u/8069847/mb.png)
+![Screenshot](mb.png)
 
 Download
 --------
 
-[Runnable jar file](https://dl.dropboxusercontent.com/u/8069847/mandelbrot.jar)
+[Runnable jar file](https://www.dropbox.com/s/k9bt00182261l5x/mandelbrot.jar?dl=0)
